@@ -1,0 +1,24 @@
+services:
+  app:
+    container_name: passportunlock
+    build:
+      context: .
+      args:
+        UID: '${UID:-1000}'
+        GID: '${GID:-1000}'
+    ports:
+      - '${DOCKER_NODEJS_PORT:-3000}:3000'
+    volumes:
+      - ./src:/var/www
+    working_dir: /var/www
+    user: 'node'
+    env_file:
+      - .env
+    environment:
+      HOST: 0.0.0.0
+    networks:
+      - default
+networks:
+  default:
+    name: passportunlock-network
+    driver: bridge

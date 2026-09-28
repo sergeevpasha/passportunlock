@@ -1,0 +1,8 @@
+.nuxt
+.output
+.data
+.nitro
+.cache
+.yarn
+dist
+coverage

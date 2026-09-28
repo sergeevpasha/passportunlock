@@ -1,0 +1,17 @@
+/* Scan only the app's own sources. The container has no .gitignore, so automatic detection would also read .nuxt and .output. */
+@import 'tailwindcss' source(none);
+@source '../..';
+
+@layer base {
+  /* Tailwind 4 no longer gives buttons a pointer cursor; bring it back. */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* One keyboard focus ring for every control. */
+  :focus-visible {
+    outline: 3px solid color-mix(in oklab, var(--color-blue-600) 50%, transparent);
+    outline-offset: 4px;
+  }
+}
