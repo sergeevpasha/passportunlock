@@ -170,7 +170,7 @@ const hovered = computed(() => {
         >
         {{ explanation.description }}
       </p>
-      <ul class="flex flex-wrap justify-center gap-x-1 gap-y-1 text-[10px] text-stone-500">
+      <ul class="flex flex-wrap justify-center gap-x-1 gap-y-1 text-[10px] text-stone-600">
         <li v-for="item in legend" :key="item.access">
           <button
             type="button"
