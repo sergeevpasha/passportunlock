@@ -342,6 +342,7 @@ async function share() {
             :options="mapOptions"
             label="Show on the map"
             size="sm"
+            align="end"
             class="w-full sm:w-64"
           />
         </div>
