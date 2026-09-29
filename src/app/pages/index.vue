@@ -99,7 +99,7 @@ const featured = computed(() => data.value?.passports.slice(0, 4) ?? []);
           <div class="mb-8 flex items-center justify-between">
             <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#eff0e9] text-emerald-800"
               ><AppIcon name="compare" :size="25" /></span
-            ><span class="font-mono text-[11px] text-stone-400">02 / COMPARE</span>
+            ><span class="font-mono text-[11px] text-stone-500">02 / COMPARE</span>
           </div>
           <h3 class="text-2xl font-medium tracking-tight">Compare</h3>
           <p class="mt-2 max-w-65 text-sm leading-6 text-stone-500">
@@ -123,10 +123,10 @@ const featured = computed(() => data.value?.passports.slice(0, 4) ?? []);
           <div class="mb-8 flex items-center justify-between">
             <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/70 text-emerald-800"
               ><AppIcon name="ranking" :size="25" /></span
-            ><span class="font-mono text-[11px] text-stone-400">03 / RANKING</span>
+            ><span class="font-mono text-[11px] text-stone-600">03 / RANKING</span>
           </div>
           <h3 class="text-2xl font-medium tracking-tight">Ranking</h3>
-          <p class="mt-2 max-w-65 text-sm leading-6 text-stone-500">
+          <p class="mt-2 max-w-65 text-sm leading-6 text-stone-600">
             Passports ordered by the number of destinations they can visit without a visa.
           </p>
           <div
@@ -148,7 +148,7 @@ const featured = computed(() => data.value?.passports.slice(0, 4) ?? []);
       aria-labelledby="spotlight-heading"
     >
       <div>
-        <p class="text-[10px] font-semibold tracking-[0.16em] text-stone-400 uppercase">Top of the ranking</p>
+        <p class="text-[10px] font-semibold tracking-[0.16em] text-stone-500 uppercase">Top of the ranking</p>
         <h2 id="spotlight-heading" class="mt-2 text-xl font-medium tracking-tight">Most visa-free destinations</h2>
         <p class="mt-2 text-xs leading-6 text-stone-500">
           The four highest-ranked passports<span v-if="data">, as of {{ dateLabel(data.sourceDate) }}</span
@@ -163,7 +163,7 @@ const featured = computed(() => data.value?.passports.slice(0, 4) ?? []);
           class="rounded-xl border border-stone-200/80 bg-white/70 p-4 transition-colors hover:border-emerald-700/40 hover:bg-white"
         >
           <div class="flex items-center justify-between">
-            <CountryFlag :code="passport.code" :size="25" /><span class="font-mono text-[10px] text-stone-400"
+            <CountryFlag :code="passport.code" :size="25" /><span class="font-mono text-[10px] text-stone-500"
               >#{{ passport.rank }}</span
             >
           </div>

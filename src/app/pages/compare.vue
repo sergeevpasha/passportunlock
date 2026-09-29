@@ -187,7 +187,7 @@ async function share() {
           class="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6"
         >
           <div class="flex items-center justify-between">
-            <span class="font-mono text-[10px] tracking-widest text-stone-400">PASSPORT 0{{ index + 1 }}</span
+            <span class="font-mono text-[10px] tracking-widest text-stone-500">PASSPORT 0{{ index + 1 }}</span
             ><button
               v-if="columns.length > 1"
               type="button"
@@ -206,7 +206,7 @@ async function share() {
           >
             <CountryFlag :code="column.code" :size="38" eager /><span class="flex-1"
               ><span class="block text-lg font-semibold tracking-tight">{{ column.name }}</span
-              ><span class="text-xs text-stone-400">{{ column.region }}</span></span
+              ><span class="text-xs text-stone-500">{{ column.region }}</span></span
             ><AppIcon name="down" :size="17" class="text-stone-400" />
           </button>
           <p class="mt-6 flex items-baseline gap-2">
@@ -254,7 +254,7 @@ async function share() {
             class="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-stone-200 bg-white text-emerald-800"
             ><AppIcon name="plus" :size="23" /></span
           ><span class="text-sm font-medium">Add a passport</span
-          ><span class="mt-2 text-xs text-stone-500">Compare up to three</span>
+          ><span class="mt-2 text-xs text-stone-600">Compare up to three</span>
         </button>
       </div>
       <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -275,7 +275,7 @@ async function share() {
           <h2 id="access-heading" class="mt-3 max-w-70 text-3xl leading-tight font-medium tracking-tight">
             {{ columns.length > 1 ? 'Combined access' : 'Access by destination' }}
           </h2>
-          <p class="mt-3 max-w-75 text-xs leading-6 text-stone-500">
+          <p class="mt-3 max-w-75 text-xs leading-6 text-stone-600">
             {{
               mapPassport === 'combined' && columns.length > 1
                 ? 'The map shows the easiest way into each destination with any of the selected passports.'
@@ -285,20 +285,20 @@ async function share() {
           <div class="mt-7 flex gap-7">
             <div>
               <p class="text-3xl font-medium text-emerald-900">{{ stats.combined }}</p>
-              <p class="mt-1 text-[10px] text-stone-500">
+              <p class="mt-1 text-[10px] text-stone-600">
                 {{ columns.length > 1 ? 'Combined visa-free' : 'Visa-free destinations' }}
               </p>
             </div>
             <div v-if="columns.length > 1">
               <p class="text-3xl font-medium text-emerald-900">{{ stats.shared }}</p>
-              <p class="mt-1 text-[10px] text-stone-500">Shared visa-free</p>
+              <p class="mt-1 text-[10px] text-stone-600">Shared visa-free</p>
             </div>
             <div v-if="columns.length > 1">
               <p class="text-3xl font-medium text-emerald-900">+{{ stats.additional }}</p>
-              <p class="mt-1 text-[10px] text-stone-500">Beyond first passport</p>
+              <p class="mt-1 text-[10px] text-stone-600">Beyond first passport</p>
             </div>
           </div>
-          <p class="mt-5 text-[10px] leading-5 text-stone-500">
+          <p class="mt-5 text-[10px] leading-5 text-stone-600">
             Combined and shared totals exclude every selected home country.
           </p>
         </div>
@@ -338,7 +338,7 @@ async function share() {
             "
             @click="filter = item.value"
           >
-            {{ item.label }}<span class="opacity-60">{{ item.count }}</span>
+            {{ item.label }}<span class="font-normal">{{ item.count }}</span>
           </button>
         </div>
         <!-- The table has one row per destination and nothing to click, so it hydrates only on interaction. -->

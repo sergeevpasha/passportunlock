@@ -28,7 +28,7 @@ defineEmits<{ toggle: [code: string] }>();
         /></span>
       </div>
       <h2 class="mt-5 truncate text-base font-semibold tracking-tight">{{ passport.name }}</h2>
-      <p class="mt-1 text-xs text-stone-400">
+      <p class="mt-1 text-xs text-stone-500">
         {{ passport.region }} <span aria-hidden="true">·</span> {{ passport.code3 }}
       </p>
       <div class="mt-6 flex items-end justify-between">
@@ -36,7 +36,7 @@ defineEmits<{ toggle: [code: string] }>();
           <span class="text-3xl font-medium tracking-tight">{{ passport.visaFree }}</span
           ><span class="ml-1.5 text-[11px] text-stone-500">visa-free</span>
         </p>
-        <span class="rounded-md bg-stone-100 px-2 py-1 text-[10px] font-medium text-stone-500"
+        <span class="rounded-md bg-stone-100 px-2 py-1 text-[10px] font-medium text-stone-600"
           >Rank #{{ passport.rank }}</span
         >
       </div>

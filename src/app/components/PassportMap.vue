@@ -149,7 +149,7 @@ const hovered = computed(() => {
               class="font-medium text-[#202923]"
               >{{ line.label }}</span
             ><span v-if="line.days" class="text-stone-500">{{ line.days }} days</span
-            ><span class="ml-auto pl-4 text-stone-400">{{ line.passport }}</span>
+            ><span class="ml-auto pl-4 text-stone-500">{{ line.passport }}</span>
           </li>
         </ul>
         <p v-else class="mt-1 text-[11px] text-stone-500">Not in the dataset</p>
@@ -164,7 +164,7 @@ const hovered = computed(() => {
       >
         <span class="flex items-center gap-2 font-semibold text-[#202923]"
           ><span class="h-2.5 w-2.5 rounded-sm" :class="swatches[explanation.access].key" />{{ explanation.label
-          }}<span v-if="explanation.count !== undefined" class="font-normal text-stone-400"
+          }}<span v-if="explanation.count !== undefined" class="font-normal text-stone-500"
             >{{ explanation.count }} {{ explanation.count === 1 ? 'destination' : 'destinations' }}</span
           ></span
         >

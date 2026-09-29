@@ -91,7 +91,7 @@ function resetFilters() {
         class="rounded-xl border border-stone-300 bg-white px-6 py-3 text-sm font-medium hover:border-emerald-800"
         @click="visibleCount += 24"
       >
-        Show more passports <span class="ml-2 text-stone-400">{{ visible.length }} / {{ filtered.length }}</span>
+        Show more passports <span class="ml-2 text-stone-500">{{ visible.length }} / {{ filtered.length }}</span>
       </button>
     </div>
     <div

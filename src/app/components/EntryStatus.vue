@@ -9,7 +9,7 @@ const classes: Record<EntryType, string> = {
   'visa required': 'bg-stone-100 text-stone-600',
   'no admission': 'bg-red-50 text-red-800',
   domestic: 'bg-emerald-900 text-white',
-  unknown: 'bg-stone-100 text-stone-500',
+  unknown: 'bg-stone-100 text-stone-600',
 };
 </script>
 
@@ -19,6 +19,6 @@ const classes: Record<EntryType, string> = {
       class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-medium whitespace-nowrap"
       :class="classes[rule.status]"
       ><AppIcon v-if="rule.status === 'visa free'" name="check" :size="12" />{{ entryLabels[rule.status] }}</span
-    ><span v-if="rule.days" class="text-[10px] whitespace-nowrap text-stone-400">{{ rule.days }} days</span>
+    ><span v-if="rule.days" class="text-[10px] whitespace-nowrap text-stone-500">{{ rule.days }} days</span>
   </div>
 </template>

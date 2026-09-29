@@ -31,7 +31,7 @@ const goHome = () => clearError({ redirect: '/' });
         >
         <template v-else>This page couldn’t load. Try again, or go to one of the pages below.</template>
       </p>
-      <p v-if="!notFound && error.message" class="mt-2 text-xs text-stone-400">{{ error.message }}</p>
+      <p v-if="!notFound && error.message" class="mt-2 text-xs text-stone-500">{{ error.message }}</p>
       <div class="mt-7 flex flex-wrap justify-center gap-3">
         <button
           v-if="!notFound"

@@ -35,7 +35,7 @@ onNuxtReady(() => preloadRouteComponents('/compare'));
             decoding="async"
             class="inline-block shrink-0 rounded-full bg-stone-100 object-cover ring-1 ring-black/5"
           /><span>{{ passport.name }}</span
-          ><span class="hidden text-[10px] font-normal text-stone-400 lg:inline">{{ passport.code3 }}</span></a
+          ><span class="hidden text-[10px] font-normal text-stone-500 lg:inline">{{ passport.code3 }}</span></a
         >
       </th>
       <td class="hidden px-6 py-4 text-xs text-stone-500 md:table-cell">{{ passport.region }}</td>

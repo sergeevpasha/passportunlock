@@ -22,7 +22,7 @@ defineProps<{
             <div class="flex items-center gap-2">
               <CountryFlag :code="column.code" :size="19" /><span class="text-xs">{{ column.name }}</span>
             </div>
-            <span class="mt-1.5 block text-[10px] font-normal text-stone-400">{{
+            <span class="mt-1.5 block text-[10px] font-normal text-stone-500">{{
               dateLabel(column.snapshot.sourceDate)
             }}</span>
           </th>
