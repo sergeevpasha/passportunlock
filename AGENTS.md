@@ -127,7 +127,9 @@ TypeScript stays on 6.x. TypeScript 7 is the native compiler without a JavaScrip
 - The Vercel project builds the `src` root directory on Node 24.x. Its install and build commands run the pinned Yarn through Corepack: `COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack yarn install --immutable`, then `COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack yarn build`. Vercel enables Corepack on its own only when `packageManager` is in a `package.json` at the repository root; otherwise it installs with Yarn 1, which ignores `yarn.lock`. Keep these commands if the project is recreated.
 - There is no site-address setting: canonical links, the sitemap and share cards use the domain each request came in on, so the same build works on any domain. `www.passportunlock.com` and `passportunlock.vercel.app` redirect to `passportunlock.com`.
 - The deployed file system is read-only, so the sync script's `--publish` only affects the Docker app. Production data changes by committing a new `--baseline` snapshot and pushing.
-- There is no analytics or monitoring; do not add any unless the user asks.
+- Google Analytics 4 is loaded through `nuxt-gtag` (`src/nuxt.config.ts`). The measurement ID is not in the code: each deployment sets it with the `NUXT_PUBLIC_GTAG_ID` environment variable, read at runtime, and a deployment without it loads no tag. The Vercel project sets it for production only. Keep it out of the root `.env`, or a local production preview sends real hits.
+- Only production builds include the module, so the dev server sends nothing. Page views on client-side navigation come from the stream's enhanced measurement (browser history events), not from app code.
+- There is no other analytics or monitoring; do not add any unless the user asks.
 
 ## Troubleshooting
 

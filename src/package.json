@@ -21,6 +21,7 @@
     "flag-icons": "^7.5.0",
     "iso-3166": "^4.4.0",
     "nuxt": "^4.5.2",
+    "nuxt-gtag": "^5.0.0",
     "topojson-client": "^3.1.0",
     "vue": "^3.5.43",
     "vue-router": "^5.3.1"
