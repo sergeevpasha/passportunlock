@@ -6,3 +6,6 @@
 .yarn
 dist
 coverage
+
+# Immutable upstream data snapshots; preserve machine-generated serialization.
+server/data/*.json

@@ -36,7 +36,7 @@ docker compose port app 3000
 
 - `.env.example` sets `DOCKER_NODEJS_PORT=3024`, giving `http://localhost:3024`. Compose falls back to host port `3000` when the variable is unset or empty. Check the actual mapping instead of assuming the port.
 - The app listens on container port `3000`; Compose sets `HOST=0.0.0.0`.
-- Root `.env` is passed into the container. For now it only sets the host port. Secrets added later belong there, not in the repository; read them on the server through private `runtimeConfig` and do not expose or commit them.
+- Root `.env` is passed into the container. It sets the host port and, optionally, `NUXT_PUBLIC_SITE_URL` (the public address used for canonical links, the sitemap and share cards) and `WIKIMEDIA_CONTACT` (for the data sync). Secrets added later belong there, not in the repository; read them on the server through private `runtimeConfig` and do not expose or commit them.
 - The Dockerfile's default command is `sh -c "yarn install --immutable && exec yarn dev"`. Installation happens on each normal container start, before the dev server. There is no custom entrypoint script or `/build` dependency directory.
 - Wait for installation and the Nuxt ready message before testing the page. A running container alone does not prove the server is ready.
 - Source edits are visible through the bind mount and Nuxt hot reload. Do not start another `yarn dev` process in the same container.

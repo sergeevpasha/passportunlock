@@ -16,14 +16,21 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@d3-maps/atlas": "^1.0.1",
+    "d3-geo": "^3.1.1",
+    "flag-icons": "^7.5.0",
+    "iso-3166": "^4.4.0",
     "nuxt": "^4.5.2",
+    "topojson-client": "^3.1.0",
     "vue": "^3.5.43",
     "vue-router": "^5.3.1"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.17.0",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/d3-geo": "^3",
     "@types/node": "^24.13.6",
+    "@types/topojson-client": "^3",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.9",
