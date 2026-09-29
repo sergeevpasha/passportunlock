@@ -36,7 +36,7 @@ docker compose port app 3000
 
 - `.env.example` sets `DOCKER_NODEJS_PORT=3024`, giving `http://localhost:3024`. Compose falls back to host port `3000` when the variable is unset or empty. Check the actual mapping instead of assuming the port.
 - The app listens on container port `3000`; Compose sets `HOST=0.0.0.0`.
-- Root `.env` is passed into the container. It sets the host port and, optionally, `NUXT_PUBLIC_SITE_URL` (the public address used for canonical links, the sitemap and share cards) and `WIKIMEDIA_CONTACT` (for the data sync). Secrets added later belong there, not in the repository; read them on the server through private `runtimeConfig` and do not expose or commit them.
+- Root `.env` is passed into the container. It sets the host port and, optionally, `WIKIMEDIA_CONTACT` for the data sync. Secrets added later belong there, not in the repository; read them on the server through private `runtimeConfig` and do not expose or commit them.
 - The Dockerfile's default command is `sh -c "yarn install --immutable && exec yarn dev"`. Installation happens on each normal container start, before the dev server. There is no custom entrypoint script or `/build` dependency directory.
 - Wait for installation and the Nuxt ready message before testing the page. A running container alone does not prove the server is ready.
 - Source edits are visible through the bind mount and Nuxt hot reload. Do not start another `yarn dev` process in the same container.
@@ -107,9 +107,27 @@ Review the resulting `src/package.json` and `src/yarn.lock` changes together. Ke
 
 TypeScript stays on 6.x. TypeScript 7 is the native compiler without a JavaScript API, which vue-tsc and typescript-eslint need. `@types/node` follows the Node major version of the Dockerfile (24). `vite` and `rolldown` are listed because Nuxt and the Tailwind and Vitest plugins expect the project to provide them; keep them on the versions Nuxt uses.
 
+## Data, API and search engines
+
+- The visa rules are a snapshot built by `scripts/sync-passports.ts` from the Wikipedia articles listed in `src/shared/wikipedia-pages.ts`; `src/shared/wikipedia.ts` parses them. The committed snapshot is `src/server/data/<date>.json`, imported in `src/server/utils/passport-data.ts`. Destinations an article leaves out are absent from the snapshot and show as not confirmed.
+- The sync only reports unless given `--baseline` (writes a snapshot to `src/server/data/`) or `--publish` (writes `src/.data/passports/current.json`, which only the Docker app serves). It passes over article edits less than 24 hours old. It holds a candidate back (exit code 2, copied to `src/.data/passports/quarantine/`) when:
+  - an article is missing or yields fewer than 150 destinations
+  - more than 2% of rules are missing
+  - the date is stale or moves backwards
+  - rules change without a new date
+  - more than 5% of rules change; `--accept-large-change` waives only this check.
+- The sync's report is `src/.data/passports/last-check.json`. `WIKIMEDIA_CONTACT` goes into its User-Agent.
+- `GET /api/passports` feeds the directory and ranking. `GET /api/compare?p1=nz&p2=ru&s1=latest` feeds the comparison: up to three passports, unknown passports return 400, and a snapshot the app no longer holds falls back to the latest.
+- Pages set their title, description, canonical link and share-card tags with `usePageSeo` (`src/app/composables/usePageSeo.ts`). `/sitemap.xml` and `/robots.txt` are server routes, and `src/public/og-image.png` is the share image.
+- The site does not say where its data comes from, except in the Credits section of the About page, which CC BY-SA 4.0 requires. Keep source names out of other page text.
+
 ## Production and hosting
 
-The app is not deployed yet. There is no domain, hosting, analytics, CI or deployment configuration; do not add any unless the user asks.
+- Production is https://passportunlock.com on Vercel. Every push to `master` deploys it; there is no other CI.
+- The Vercel project builds the `src` root directory on Node 24.x. Its install and build commands run the pinned Yarn through Corepack: `COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack yarn install --immutable`, then `COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack yarn build`. Vercel enables Corepack on its own only when `packageManager` is in a `package.json` at the repository root; otherwise it installs with Yarn 1, which ignores `yarn.lock`. Keep these commands if the project is recreated.
+- There is no site-address setting: canonical links, the sitemap and share cards use the domain each request came in on, so the same build works on any domain. `www.passportunlock.com` and `passportunlock.vercel.app` redirect to `passportunlock.com`.
+- The deployed file system is read-only, so the sync script's `--publish` only affects the Docker app. Production data changes by committing a new `--baseline` snapshot and pushing.
+- There is no analytics or monitoring; do not add any unless the user asks.
 
 ## Troubleshooting
 

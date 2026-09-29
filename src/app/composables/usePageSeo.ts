@@ -2,12 +2,7 @@ import { toValue, type MaybeRefOrGetter } from 'vue';
 
 const siteName = 'Passport Unlock';
 
-/** The site's public origin: NUXT_PUBLIC_SITE_URL, or the origin of the current request when that is not set. */
-export function useSiteOrigin() {
-  return new URL(useRuntimeConfig().public.siteUrl || useRequestURL().origin).origin;
-}
-
-/** The title, description, canonical link and social-card tags of a page. */
+/** The title, description, canonical link and social-card tags of a page, on whichever domain served it. */
 export function usePageSeo(page: {
   title: MaybeRefOrGetter<string>;
   description: MaybeRefOrGetter<string>;
@@ -15,7 +10,7 @@ export function usePageSeo(page: {
   path?: MaybeRefOrGetter<string | undefined>;
 }) {
   const route = useRoute();
-  const origin = useSiteOrigin();
+  const origin = useRequestURL().origin;
   const url = computed(() => new URL(toValue(page.path) ?? route.path, origin).href);
   useSeoMeta({
     title: page.title,

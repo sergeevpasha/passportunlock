@@ -9,11 +9,6 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Compose mounts the application here; override for another production storage location.
     passportDataDirectory: '/var/www/.data/passports',
-    public: {
-      // The site's public origin (NUXT_PUBLIC_SITE_URL) for canonical links, the sitemap and social cards. When empty,
-      // the origin of the request is used.
-      siteUrl: '',
-    },
   },
   nitro: {
     // flag-icons SVGs are served as static files (/flags/1x1/nz.svg, /flags/4x3/nz.svg) instead of being bundled.

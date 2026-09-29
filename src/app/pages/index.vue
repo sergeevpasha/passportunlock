@@ -11,7 +11,7 @@ useHead({
         '@context': 'https://schema.org',
         '@type': 'WebSite',
         name: 'Passport Unlock',
-        url: `${useSiteOrigin()}/`,
+        url: `${useRequestURL().origin}/`,
         description,
       }),
     },

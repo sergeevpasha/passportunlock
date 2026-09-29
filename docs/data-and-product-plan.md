@@ -44,7 +44,7 @@ The community maintainers publish MIT licenses. That is not independently verifi
 
 ## Production model
 
-Keep the present Nuxt/Vue UI and Nitro server. Use a relational database for normalized rules and publication state, plus durable object storage for raw provider responses and immutable snapshots when permitted by the license. Hosting and provider contracts are undecided; no infrastructure has been added.
+Keep the present Nuxt/Vue UI and Nitro server. Use a relational database for normalized rules and publication state, plus durable object storage for raw provider responses and immutable snapshots when permitted by the license. The prototype runs on Vercel; storage and provider contracts are undecided.
 
 Store at least:
 
