@@ -1,6 +1,7 @@
 import { countsFor, ruleFor, sourceAgeDays, type Snapshot } from '#shared/passports';
 import { countryFlag } from '#shared/countries';
 import { passportCatalogue } from '#shared/catalogue';
+import { parseComparisonQuery, type PassportSelection } from '#shared/comparison-query';
 import { passportSnapshots } from '../utils/passport-data';
 
 export default defineEventHandler(async event => {
@@ -10,14 +11,17 @@ export default defineEventHandler(async event => {
   const countries = passportCatalogue(latest.matrix)
     .map(passport => ({ ...passport, flag: countryFlag(passport.code) }))
     .sort((a, b) => a.name.localeCompare(b.name, 'en'));
-  const requested = [1, 2, 3].flatMap(index => {
-    const code = query[`p${index}`] ?? (index === 1 ? 'NZ' : index === 2 && !query.p1 ? 'RU' : undefined);
-    if (code === undefined) return [];
-    if (typeof code !== 'string' || !latest.matrix[code.toUpperCase()])
-      throw createError({ statusCode: 400, statusMessage: 'Choose a supported passport.' });
+  let selections: PassportSelection[];
+  try {
+    selections = parseComparisonQuery(query);
+  } catch {
+    throw createError({ statusCode: 400, statusMessage: 'Choose a supported passport.' });
+  }
+  const requested = selections.map(({ code, snapshot: id }) => {
+    if (!latest.matrix[code]) throw createError({ statusCode: 400, statusMessage: 'Choose a supported passport.' });
     // A snapshot that is no longer kept, as in an old shared link, falls back to the latest one.
-    const snapshot = snapshots.find(item => item.id === query[`s${index}`]) ?? latest;
-    return [{ code: code.toUpperCase(), snapshot }];
+    const snapshot = snapshots.find(item => item.id === id) ?? latest;
+    return { code, snapshot };
   });
   // Snapshot details, without the rules and the article revisions they were read from.
   const metadata = ({ matrix: _matrix, pages: _pages, ...snapshot }: Snapshot) => ({

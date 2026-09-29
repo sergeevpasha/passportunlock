@@ -15,6 +15,10 @@ export default defineNuxtConfig({
     // Compose mounts the application here; override for another production storage location.
     passportDataDirectory: '/var/www/.data/passports',
   },
+  routeRules: {
+    // The ranking is now the passport list's default order.
+    '/rankings': { redirect: { to: '/passports', statusCode: 301 } },
+  },
   nitro: {
     // flag-icons SVGs are served as static files (/flags/1x1/nz.svg, /flags/4x3/nz.svg) instead of being bundled.
     publicAssets: [
@@ -35,7 +39,7 @@ export default defineNuxtConfig({
       title: 'Passport Unlock',
       meta: [{ name: 'theme-color', content: '#f8f9f5' }],
       link: [
-        { rel: 'icon', type: 'image/svg+xml', href: '/brand/passport-fold.svg' },
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'apple-touch-icon', href: '/brand/apple-touch-icon.png' },
       ],
     },

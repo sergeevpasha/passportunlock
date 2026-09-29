@@ -4,7 +4,7 @@ defineProps<{ date?: string }>();
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs leading-6 text-stone-500">
+  <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs leading-6 text-stone-600">
     <span class="inline-flex items-center gap-2"
       ><span class="h-1.5 w-1.5 rounded-full bg-emerald-600" /> Updated<span v-if="date">
         {{ dateLabel(date) }}</span

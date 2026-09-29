@@ -45,11 +45,3 @@ export function matchesCountry(
     (!query || `${country.name} ${country.code} ${country.code3}`.toLocaleLowerCase('en').includes(query))
   );
 }
-
-export const maxPassports = 3;
-
-export function comparisonQuery(codes: string[]): Record<string, string> {
-  return Object.fromEntries(
-    [...new Set(codes)].slice(0, maxPassports).map((code, index) => [`p${index + 1}`, code.toLowerCase()])
-  );
-}

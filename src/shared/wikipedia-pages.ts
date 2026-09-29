@@ -207,7 +207,3 @@ export const wikipediaPages: Record<string, string> = {
   MK: 'Visa requirements for citizens of North Macedonia',
   MO: 'Visa requirements for Chinese citizens of Macau',
 };
-
-export function wikipediaUrl(title: string) {
-  return `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replaceAll(' ', '_'))}`;
-}

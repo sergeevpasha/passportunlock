@@ -1,2 +1,37 @@
+/* Scan only the app's own sources. The container has no .gitignore, so automatic detection would also read .nuxt and .output. */
 @import 'tailwindcss' source(none);
 @source '../..';
+
+@theme {
+  --color-canvas: #f8f9f5;
+  --color-ink: #202923;
+  --color-panel: #eef0e5;
+  --color-land: #d6dfce;
+}
+
+/* The small uppercase label above headings and stats. */
+@utility eyebrow {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+@layer base {
+  /* Tailwind 4 no longer gives buttons a pointer cursor; bring it back. */
+  button:not(:disabled),
+  [role='button']:not(:disabled),
+  input[type='checkbox']:not(:disabled) {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  /* One keyboard focus ring for every control. */
+  :focus-visible {
+    outline: 2px solid var(--color-emerald-700);
+    outline-offset: 4px;
+  }
+}

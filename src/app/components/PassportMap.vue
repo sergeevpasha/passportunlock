@@ -112,8 +112,8 @@ const hovered = computed(() => {
       <svg
         viewBox="0 0 1000 520"
         role="img"
-        aria-label="World map of the easiest way into each destination. The destination table below lists every rule."
-        class="mx-auto max-h-80 w-full"
+        :aria-label="`World map of ${passport === 'combined' && passports.length > 1 ? 'the easiest way into' : 'the entry rule for'} each destination. The destination table below lists every rule.`"
+        class="mx-auto max-h-96 w-full"
         @pointermove="point"
         @pointerdown="point"
         @pointerleave="leave"
@@ -123,14 +123,10 @@ const hovered = computed(() => {
           :key="country.id"
           :d="country.path"
           :data-index="index"
-          class="stroke-[#f8f9f5] stroke-[0.8] transition-opacity motion-reduce:transition-none"
+          class="stroke-panel stroke-[0.8] transition-opacity motion-reduce:transition-none"
           :class="[swatches[country.access].fill, explained && explained !== country.access && 'opacity-20']"
         />
-        <path
-          v-if="hovered"
-          :d="hovered.shape.path"
-          class="pointer-events-none fill-none stroke-[#202923] stroke-[1.5]"
-        />
+        <path v-if="hovered" :d="hovered.shape.path" class="pointer-events-none fill-none stroke-ink stroke-[1.5]" />
       </svg>
       <div
         v-if="hovered"
@@ -138,21 +134,21 @@ const hovered = computed(() => {
         class="pointer-events-none absolute z-10 w-max max-w-72 rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-lg shadow-stone-900/10"
         :style="{ left: `${pointer!.left}px`, top: `${pointer!.top}px` }"
       >
-        <p class="flex items-center gap-2 text-xs font-semibold text-[#202923]">
+        <p class="flex items-center gap-2 text-sm font-semibold text-ink">
           <CountryFlag v-if="hovered.shape.row" :code="hovered.shape.row.code" :size="16" eager />{{
             hovered.shape.row?.name ?? hovered.shape.name
           }}
         </p>
         <ul v-if="hovered.lines.length" class="mt-2 space-y-1.5">
-          <li v-for="(line, index) in hovered.lines" :key="index" class="flex items-center gap-2 text-[11px]">
+          <li v-for="(line, index) in hovered.lines" :key="index" class="flex items-center gap-2 text-xs">
             <span class="h-1 w-3 shrink-0 rounded-full" :class="swatches[line.access].key" /><span
-              class="font-medium text-[#202923]"
+              class="font-medium text-ink"
               >{{ line.label }}</span
-            ><span v-if="line.days" class="text-stone-500">{{ line.days }} days</span
-            ><span class="ml-auto pl-4 text-stone-400">{{ line.passport }}</span>
+            ><span v-if="line.days" class="text-stone-600">{{ line.days }} days</span
+            ><span class="ml-auto pl-4 text-stone-600">{{ line.passport }}</span>
           </li>
         </ul>
-        <p v-else class="mt-1 text-[11px] text-stone-500">Not in the dataset</p>
+        <p v-else class="mt-1 text-xs text-stone-600">No data</p>
       </div>
     </div>
     <div class="relative mt-3">
@@ -160,17 +156,17 @@ const hovered = computed(() => {
         v-if="explanation"
         id="map-legend-note"
         role="tooltip"
-        class="pointer-events-none absolute inset-x-0 bottom-full z-10 mx-auto mb-2 w-fit max-w-sm rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-[11px] leading-5 text-stone-600 shadow-lg shadow-stone-900/10"
+        class="pointer-events-none absolute inset-x-0 bottom-full z-10 mx-auto mb-2 w-fit max-w-sm rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-xs leading-5 text-stone-600 shadow-lg shadow-stone-900/10"
       >
-        <span class="flex items-center gap-2 font-semibold text-[#202923]"
+        <span class="flex items-center gap-2 font-semibold text-ink"
           ><span class="h-2.5 w-2.5 rounded-sm" :class="swatches[explanation.access].key" />{{ explanation.label
-          }}<span v-if="explanation.count !== undefined" class="font-normal text-stone-400"
+          }}<span v-if="explanation.count !== undefined" class="font-normal text-stone-600"
             >{{ explanation.count }} {{ explanation.count === 1 ? 'destination' : 'destinations' }}</span
           ></span
         >
         {{ explanation.description }}
       </p>
-      <ul class="flex flex-wrap justify-center gap-x-1 gap-y-1 text-[10px] text-stone-500">
+      <ul class="flex flex-wrap justify-center gap-x-1 gap-y-1 text-xs text-stone-600">
         <li v-for="item in legend" :key="item.access">
           <button
             type="button"
@@ -186,7 +182,7 @@ const hovered = computed(() => {
             <span class="h-2.5 w-2.5 rounded-sm" :class="swatches[item.access].key" /><span
               class="underline decoration-stone-300 decoration-dotted underline-offset-2"
               >{{ item.label }}</span
-            ><span v-if="item.count !== undefined" class="font-medium text-[#202923]">{{ item.count }}</span>
+            ><span v-if="item.count !== undefined" class="font-medium text-ink">{{ item.count }}</span>
           </button>
         </li>
       </ul>

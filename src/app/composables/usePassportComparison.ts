@@ -1,31 +1,20 @@
+import { comparisonQuery, parseComparisonQuery, type PassportSelection } from '#shared/comparison-query';
+
 export function usePassportComparison() {
   const route = useRoute();
-  const selections = computed(() =>
-    [1, 2, 3].flatMap(index => {
-      const code = route.query[`p${index}`] ?? (index === 1 ? 'SG' : index === 2 && !route.query.p1 ? 'US' : undefined);
-      return typeof code === 'string'
-        ? [{ code: code.toUpperCase(), snapshot: String(route.query[`s${index}`] ?? 'latest') }]
-        : [];
-    })
-  );
-  const query = computed(() =>
-    Object.fromEntries(
-      selections.value.flatMap((selection, index) => [
-        [`p${index + 1}`, selection.code],
-        [`s${index + 1}`, selection.snapshot],
-      ])
-    )
-  );
+  const selections = computed(() => {
+    try {
+      return parseComparisonQuery(route.query);
+    } catch {
+      throw createError({ statusCode: 400, statusMessage: 'Choose a supported passport.' });
+    }
+  });
+  const query = computed(() => comparisonQuery(selections.value));
   const request = useFetch('/api/compare', { query });
-  function update(next: typeof selections.value) {
+  function update(next: PassportSelection[]) {
     return navigateTo({
       path: '/compare',
-      query: Object.fromEntries(
-        next.flatMap((selection, index) => [
-          [`p${index + 1}`, selection.code.toLowerCase()],
-          [`s${index + 1}`, selection.snapshot],
-        ])
-      ),
+      query: comparisonQuery(next),
     });
   }
   function setPassport(index: number, code: string) {

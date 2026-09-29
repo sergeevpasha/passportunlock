@@ -28,13 +28,5 @@ export const worldCountries = geography.features.map(country => {
     iso31661Alpha3ToAlpha2[id] ||
     (metadataCode && /^[A-Z]{2}$/.test(metadataCode) ? metadataCode : undefined) ||
     (id === 'KOS' ? 'XK' : undefined);
-  // Keep labels on the main landmass rather than between distant territories.
-  const labelGeometry =
-    country.geometry.type === 'MultiPolygon'
-      ? country.geometry.coordinates
-          .map(coordinates => ({ type: 'Polygon' as const, coordinates }))
-          .sort((a, b) => path.area(b) - path.area(a))[0]!
-      : country.geometry;
-  const centroid = path.centroid(labelGeometry);
-  return { id, code, path: path(country) ?? '', centroid, name: String(country.properties?.name) };
+  return { id, code, path: path(country) ?? '', name: String(country.properties?.name) };
 });

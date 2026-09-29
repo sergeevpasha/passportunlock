@@ -115,29 +115,44 @@ export function isVisaFree(rule: EntryRule) {
   return rule.status === 'visa free';
 }
 
-/** One character per passport, `1` where that passport is visa-free: `10` means only the first one is. */
-export function visaFreeMask(rules: EntryRule[]): string {
-  return rules.map(rule => (isVisaFree(rule) ? '1' : '0')).join('');
+/** Which of the rules, by index, are the easiest way in: the least demanding entry type, then the longest stay when
+ * every rule of that type states one. Home countries and unconfirmed rules are left out. Empty when the remaining rules
+ * can't be told apart, so only real differences are marked. */
+export function easiestRules(rules: EntryRule[]): number[] {
+  const comparable = rules.flatMap((rule, index) => {
+    const rank = requirementTypes.indexOf(rule.status as RequirementType);
+    return rank < 0 ? [] : [{ index, rank, days: rule.days }];
+  });
+  const rank = Math.min(...comparable.map(rule => rule.rank));
+  let easiest = comparable.filter(rule => rule.rank === rank);
+  if (easiest.every(rule => rule.days)) {
+    const longest = Math.max(...easiest.map(rule => rule.days!));
+    easiest = easiest.filter(rule => rule.days === longest);
+  }
+  return easiest.length < comparable.length ? easiest.map(rule => rule.index) : [];
 }
 
-/** International destinations counted by `visaFreeMask`, the regions of a Venn diagram of visa-free access. */
-export function overlapCounts(rows: { code: string; rules: EntryRule[] }[], passportCodes: string[]) {
-  const counts: Record<string, number> = {};
-  for (const row of rows) {
-    if (passportCodes.includes(row.code) || !row.rules.length) continue;
-    const mask = visaFreeMask(row.rules);
-    counts[mask] = (counts[mask] ?? 0) + 1;
-  }
-  return counts;
+export type ComparisonFilter = 'all' | 'different' | 'shared' | 'combined';
+
+/** The same access predicates drive both the destination list and its summary counts. */
+export function matchesComparisonFilter(
+  row: { code: string; rules: EntryRule[] },
+  passportCodes: string[],
+  filter: ComparisonFilter
+) {
+  if (filter === 'all') return true;
+  if (filter === 'different') return rulesDiffer(row.rules);
+  if (passportCodes.includes(row.code) || !row.rules.length) return false;
+  return filter === 'shared' ? row.rules.every(isVisaFree) : row.rules.some(isVisaFree);
 }
 
 export function comparisonStats(rows: { code: string; rules: EntryRule[] }[], passportCodes: string[]) {
-  const international = rows.filter(row => !passportCodes.includes(row.code) && row.rules.length > 0);
+  const combined = rows.filter(row => matchesComparisonFilter(row, passportCodes, 'combined'));
   return {
-    shared: international.filter(row => row.rules.every(isVisaFree)).length,
-    combined: international.filter(row => row.rules.some(isVisaFree)).length,
-    additional: international.filter(row => !isVisaFree(row.rules[0]!) && row.rules.slice(1).some(isVisaFree)).length,
-    differences: rows.filter(row => rulesDiffer(row.rules)).length,
+    shared: rows.filter(row => matchesComparisonFilter(row, passportCodes, 'shared')).length,
+    combined: combined.length,
+    additional: combined.filter(row => !isVisaFree(row.rules[0]!)).length,
+    differences: rows.filter(row => matchesComparisonFilter(row, passportCodes, 'different')).length,
   };
 }
 

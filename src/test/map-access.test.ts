@@ -33,6 +33,6 @@ describe('map access', () => {
       expect(worldCountries.find(country => country.id === id)?.code).toBe(code);
     }
     expect(worldCountries.find(country => country.id === 'SOL')?.code).toBeUndefined();
-    expect(worldCountries.every(country => country.path && country.centroid.every(Number.isFinite))).toBe(true);
+    expect(worldCountries.every(country => country.path)).toBe(true);
   });
 });

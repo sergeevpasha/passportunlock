@@ -13,7 +13,6 @@ const types = [...requirementTypes, 'domestic', 'unknown'] as const;
 <template>
   <article class="mx-auto max-w-4xl">
     <PageHeading
-      eyebrow="About"
       title="About the data"
       description="What each entry type means, how passports are scored, and what to check before you travel."
     />
@@ -29,12 +28,12 @@ const types = [...requirementTypes, 'domestic', 'unknown'] as const;
     </div>
     <section class="mt-9 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
       <h2 class="text-xl font-semibold tracking-tight">Dates</h2>
-      <p class="mt-3 text-sm leading-7 text-stone-500">
+      <p class="mt-3 text-sm leading-7 text-stone-600">
         The rules were last updated<span v-if="data"> on {{ dateLabel(data.sourceDate, 'long') }}</span
         >. That is when the data was updated, not when a rule was last officially confirmed. Each comparison column
         shows the date of its data.
       </p>
-      <p class="mt-3 text-sm leading-7 text-stone-500">
+      <p class="mt-3 text-sm leading-7 text-stone-600">
         A few rules are missing, mostly for Palestine, Kosovo, Macau, Hong Kong and Taiwan. They show as “Not confirmed”
         and don’t count toward any score.
       </p>
@@ -44,13 +43,13 @@ const types = [...requirementTypes, 'domestic', 'unknown'] as const;
       <dl class="mt-4 divide-y divide-stone-100">
         <div v-for="type in types" :key="type" class="grid gap-2 py-4 sm:grid-cols-[11rem_1fr] sm:gap-6">
           <dt><EntryStatus :rule="{ status: type }" /></dt>
-          <dd class="text-sm leading-7 text-stone-500">{{ entryDescriptions[type] }}</dd>
+          <dd class="text-sm leading-7 text-stone-600">{{ entryDescriptions[type] }}</dd>
         </div>
       </dl>
     </section>
     <section class="mt-5 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
       <h2 class="text-xl font-semibold tracking-tight">How passports are scored</h2>
-      <div class="mt-5 grid gap-6 text-sm leading-7 text-stone-500 sm:grid-cols-2">
+      <div class="mt-5 grid gap-6 text-sm leading-7 text-stone-600 sm:grid-cols-2">
         <div>
           <h3 class="font-semibold text-stone-800">The global ranking</h3>
           <p class="mt-2">
@@ -79,19 +78,19 @@ const types = [...requirementTypes, 'domestic', 'unknown'] as const;
     </section>
     <section class="mt-5 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
       <h2 class="text-xl font-semibold tracking-tight">How entry types are assigned</h2>
-      <p class="mt-3 text-sm leading-7 text-stone-500">
+      <p class="mt-3 text-sm leading-7 text-stone-600">
         A destination that needs no visa but does need an electronic travel authorisation (ESTA, eTA, ETA, NZeTA, K-ETA
         and similar) counts as an eTA, so the visa-free score only includes destinations that need no approval before
         travel. Where both an eVisa and a visa on arrival are available, the visa on arrival is shown.
       </p>
-      <p class="mt-3 text-sm leading-7 text-stone-500">
+      <p class="mt-3 text-sm leading-7 text-stone-600">
         Rules are not equally detailed for every passport: one may note an authorisation that another leaves out. Check
         the destination’s official site for the trip you plan.
       </p>
     </section>
     <section class="mt-5 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
       <h2 class="text-xl font-semibold tracking-tight">How updates are handled</h2>
-      <p class="mt-3 text-sm leading-7 text-stone-500">
+      <p class="mt-3 text-sm leading-7 text-stone-600">
         Each update is checked before it goes live. It is held back for review when a passport’s rules are missing or
         incomplete, when more than 2% of rules are missing, or when more than 5% of rules change at once. An accepted
         update replaces the data in one step, and the previous version is kept.
@@ -99,7 +98,7 @@ const types = [...requirementTypes, 'domestic', 'unknown'] as const;
     </section>
     <section id="credits" class="mt-5 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
       <h2 class="text-xl font-semibold tracking-tight">Credits</h2>
-      <p class="mt-3 text-sm leading-7 text-stone-500">
+      <p class="mt-3 text-sm leading-7 text-stone-600">
         Visa rules are adapted from the
         <a
           href="https://en.wikipedia.org/wiki/Category:Visa_requirements_by_nationality"
@@ -112,7 +111,7 @@ const types = [...requirementTypes, 'domestic', 'unknown'] as const;
         >. The adapted data, including the CSV export and the API, is shared under the same licence. Passport Unlock is
         independent and not endorsed by the Wikimedia Foundation.
       </p>
-      <p class="mt-4 text-sm leading-7 text-stone-500">
+      <p class="mt-4 text-sm leading-7 text-stone-600">
         Map geometry:
         <a href="/licenses/d3-maps-atlas.txt" class="text-emerald-800 underline underline-offset-4">D3 Maps Atlas</a>.
         Flags: <a href="/licenses/flag-icons.txt" class="text-emerald-800 underline underline-offset-4">flag-icons</a>.

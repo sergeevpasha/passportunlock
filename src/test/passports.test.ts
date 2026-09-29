@@ -3,11 +3,14 @@ import {
   changedRules,
   comparisonStats,
   countsFor,
+  easiestRules,
   isVisaFree,
+  matchesComparisonFilter,
   parseMatrix,
   ruleFor,
   rulesDiffer,
   sourceAgeDays,
+  type EntryRule,
 } from '#shared/passports';
 import { countryRegion } from '#shared/countries';
 import wikipedia from '../server/data/2026-09-28.json';
@@ -96,6 +99,54 @@ describe('passport data integrity', () => {
     );
     expect(stats).toEqual({ shared: 1, combined: 2, additional: 1, differences: 4 });
     expect(comparisonStats([], []).combined).toBe(0);
+  });
+  it('uses the same destination predicates for filters and summary counts', () => {
+    const rows: { code: string; rules: EntryRule[] }[] = [
+      { code: 'NZ', rules: [{ status: 'domestic' }, { status: 'visa free' }] },
+      {
+        code: 'JP',
+        rules: [
+          { status: 'visa free', days: 30 },
+          { status: 'visa free', days: 90 },
+        ],
+      },
+      { code: 'CN', rules: [{ status: 'visa required' }, { status: 'visa free' }] },
+      { code: 'US', rules: [{ status: 'eta' }, { status: 'unknown' }] },
+      { code: 'DE', rules: [{ status: 'visa free' }, { status: 'visa free' }] },
+      { code: 'FR', rules: [] },
+    ];
+    const passports = ['NZ', 'RU'];
+    const expected = {
+      all: ['NZ', 'JP', 'CN', 'US', 'DE', 'FR'],
+      different: ['NZ', 'JP', 'CN', 'US'],
+      shared: ['JP', 'DE'],
+      combined: ['JP', 'CN', 'DE'],
+    };
+    for (const filter of ['all', 'different', 'shared', 'combined'] as const) {
+      expect(rows.filter(row => matchesComparisonFilter(row, passports, filter)).map(row => row.code)).toEqual(
+        expected[filter]
+      );
+    }
+    expect(comparisonStats(rows, passports)).toEqual({ shared: 2, combined: 3, additional: 1, differences: 4 });
+  });
+  it('marks the easiest way in only where the passports really differ', () => {
+    expect(easiestRules([{ status: 'visa on arrival', days: 30 }, { status: 'visa free' }])).toEqual([1]);
+    expect(
+      easiestRules([
+        { status: 'visa free', days: 90 },
+        { status: 'visa free', days: 365 },
+      ])
+    ).toEqual([1]);
+    expect(
+      easiestRules([{ status: 'visa free', days: 90 }, { status: 'visa free', days: 90 }, { status: 'e-visa' }])
+    ).toEqual([0, 1]);
+    // A missing stay can't be compared with a stated one, and identical rules aren't a difference.
+    expect(easiestRules([{ status: 'visa free' }, { status: 'visa free', days: 90 }])).toEqual([]);
+    expect(easiestRules([{ status: 'eta' }, { status: 'eta' }])).toEqual([]);
+    // Home countries and unconfirmed rules are never the easiest, and don't count as a difference.
+    expect(easiestRules([{ status: 'domestic' }, { status: 'visa free' }])).toEqual([]);
+    expect(easiestRules([{ status: 'unknown' }, { status: 'e-visa' }, { status: 'visa required' }])).toEqual([1]);
+    expect(easiestRules([])).toEqual([]);
   });
   it('holds back Wikipedia snapshots with missing or thin articles or too many missing rules', () => {
     expect(coverageIssues({ missingPages: [], thinPages: [], missingCells: 84, total: 39402 })).toEqual([]);

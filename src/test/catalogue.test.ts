@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { comparisonQuery, matchesCountry, passportCatalogue, rankPassports } from '#shared/catalogue';
+import { matchesCountry, passportCatalogue, rankPassports } from '#shared/catalogue';
 import { comparisonCsv } from '~/utils/export-comparison';
 import wikipedia from '../server/data/2026-09-28.json';
 import { parseMatrix } from '#shared/passports';
@@ -36,9 +36,6 @@ describe('passport catalogue', () => {
     expect(matchesCountry(country, 'zealand')).toBe(true);
     expect(matchesCountry(country, 'NZ', 'Europe')).toBe(false);
     expect(matchesCountry(country, 'not a country')).toBe(false);
-  });
-  it('serializes unique passport selections in order and caps them at three', () => {
-    expect(comparisonQuery(['NZ', 'NZ', 'US', 'DE', 'SG'])).toEqual({ p1: 'nz', p2: 'us', p3: 'de' });
   });
 });
 

@@ -1,4 +1,4 @@
-import type { EntryRule, EntryType } from '#shared/passports';
+import type { EntryType } from '#shared/passports';
 
 export const entryShortLabels: Record<EntryType, string> = {
   'visa free': 'Visa-free',
@@ -11,13 +11,9 @@ export const entryShortLabels: Record<EntryType, string> = {
   unknown: 'Not confirmed',
 };
 
-export function stayLabel(rule: EntryRule) {
-  if (rule.days) return `${rule.days} days`;
-  if (rule.status === 'domestic') return 'Not counted';
-  if (rule.status === 'visa required') return 'Apply before travel';
-  if (rule.status === 'e-visa' || rule.status === 'eta') return 'Approval before travel';
-  if (rule.status === 'no admission') return 'Check restrictions';
-  return 'Stay not specified';
+/** "A", "A and B", "A, B and C". */
+export function joinNames(names: string[], word = 'and') {
+  return names.length > 1 ? `${names.slice(0, -1).join(', ')} ${word} ${names.at(-1)}` : (names[0] ?? '');
 }
 
 export function dateLabel(value: string, month: 'short' | 'long' = 'short') {

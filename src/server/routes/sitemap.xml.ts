@@ -10,7 +10,7 @@ export default defineEventHandler(async event => {
   setHeader(event, 'Content-Type', 'application/xml; charset=utf-8');
   return sitemapXml(
     getRequestURL(event).origin,
-    ['/', '/passports', '/compare', '/rankings', '/about', ...passports],
+    ['/', '/passports', '/compare', '/about', ...passports],
     latest.sourceDate
   );
 });
