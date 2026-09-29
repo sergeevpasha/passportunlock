@@ -58,11 +58,11 @@ function resetFilters() {
         <p class="mt-4 text-xs text-stone-500">Africa, the Americas, Asia, Europe and Oceania</p>
       </div>
       <div class="rounded-2xl border border-stone-200 bg-[#eef0e5] p-6">
-        <p class="text-[10px] tracking-[0.14em] text-stone-500 uppercase">Average</p>
+        <p class="text-[10px] tracking-[0.14em] text-stone-600 uppercase">Average</p>
         <p class="mt-3 text-4xl font-medium tracking-tight">
-          {{ average }}<span class="ml-2 text-xs font-normal tracking-normal text-stone-500">destinations</span>
+          {{ average }}<span class="ml-2 text-xs font-normal tracking-normal text-stone-600">destinations</span>
         </p>
-        <p class="mt-4 text-xs text-stone-500">Visa-free destinations per passport, rounded</p>
+        <p class="mt-4 text-xs text-stone-600">Visa-free destinations per passport, rounded</p>
       </div>
     </div>
     <CountryFilters v-model:search="search" v-model:region="region" placeholder="Find a passport in the ranking…" />
@@ -98,48 +98,9 @@ function resetFilters() {
             </th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-stone-100">
-          <tr v-for="passport in filtered" :key="passport.code" class="group hover:bg-emerald-50/40">
-            <td class="px-4 py-4 sm:px-6">
-              <span
-                class="inline-flex h-8 min-w-8 items-center justify-center rounded-lg font-mono text-xs"
-                :class="passport.rank <= 3 ? 'bg-lime-100 text-emerald-900' : 'text-stone-400'"
-                >{{ String(passport.rank).padStart(2, '0') }}</span
-              >
-            </td>
-            <th scope="row" class="px-3 py-4 font-medium sm:px-6">
-              <NuxtLink
-                :to="{ path: '/compare', query: { p1: passport.code.toLowerCase() } }"
-                class="flex items-center gap-3 hover:text-emerald-700"
-                ><CountryFlag :code="passport.code" :size="28" /><span>{{ passport.name }}</span
-                ><span class="hidden text-[10px] font-normal text-stone-400 lg:inline">{{
-                  passport.code3
-                }}</span></NuxtLink
-              >
-            </th>
-            <td class="hidden px-6 py-4 text-xs text-stone-500 md:table-cell">{{ passport.region }}</td>
-            <td class="px-4 py-4 sm:px-6">
-              <div class="flex items-center justify-end gap-5">
-                <svg
-                  viewBox="0 0 100 4"
-                  aria-hidden="true"
-                  class="hidden h-1.5 w-28 overflow-hidden rounded-full lg:block"
-                >
-                  <rect width="100" height="4" class="fill-stone-100" />
-                  <rect :width="(passport.visaFree / passport.total) * 100" height="4" class="fill-emerald-700" /></svg
-                ><span class="w-8 text-right font-semibold tabular-nums">{{ passport.visaFree }}</span>
-              </div>
-            </td>
-            <td class="hidden px-6 py-4 text-right sm:table-cell">
-              <NuxtLink
-                :to="{ path: '/compare', query: { p1: passport.code.toLowerCase() } }"
-                :aria-label="`View ${passport.name} destinations`"
-                class="inline-flex h-8 w-8 items-center justify-center rounded-full text-stone-400 group-hover:bg-emerald-100 group-hover:text-emerald-800"
-                ><AppIcon name="diagonal" :size="17"
-              /></NuxtLink>
-            </td>
-          </tr>
-        </tbody>
+        <!-- 199 rows are costly to hydrate on page load, so they hydrate once they scroll into view. Interaction-based
+             hydration isn't used: a quick tap could land before the rows' code arrives and bypass client-side navigation. -->
+        <LazyRankingRows :passports="filtered" hydrate-on-visible />
       </table>
     </div>
     <p class="mt-5 max-w-3xl text-xs leading-6 text-stone-500">

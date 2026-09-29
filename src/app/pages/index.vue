@@ -52,7 +52,8 @@ const featured = computed(() => data.value?.passports.slice(0, 4) ?? []);
       <div
         class="relative isolate hidden h-[290px] items-center justify-center overflow-hidden rounded-3xl bg-[#edf0e6] md:flex lg:h-[350px]"
       >
-        <div class="absolute inset-0 opacity-80"><WorldArtwork /></div>
+        <!-- Decorative and static: never hydrated, so the map projection code doesn't load on the home page. -->
+        <div class="absolute inset-0 opacity-80"><LazyWorldArtwork hydrate-never /></div>
         <div class="absolute h-65 w-65 rounded-full border border-emerald-900/10 sm:h-76 sm:w-76" />
         <div class="absolute h-44 w-44 rounded-full border border-emerald-900/10 sm:h-55 sm:w-55" />
         <div class="absolute -translate-x-13 translate-y-2 -rotate-16">

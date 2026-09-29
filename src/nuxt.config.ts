@@ -10,6 +10,8 @@ export default defineNuxtConfig({
     // Local development shouldn't show up as site traffic.
     // The measurement ID is set per deployment with NUXT_PUBLIC_GTAG_ID; without one, no tag loads.
     enabled: process.env.NODE_ENV === 'production',
+    // plugins/gtag.client.ts loads gtag.js once the page is idle, so it doesn't compete with the first render.
+    initMode: 'manual',
   },
   runtimeConfig: {
     // Compose mounts the application here; override for another production storage location.

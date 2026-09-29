@@ -310,7 +310,8 @@ async function share() {
             size="sm"
             align="end"
             class="ml-auto w-64 max-w-full"
-          /><PassportMap :rows="rows" :passports="columns" :passport="mapPassport" />
+          /><!-- The map projects every country in the browser, so its code loads once the map scrolls into view. -->
+          <LazyPassportMap :rows="rows" :passports="columns" :passport="mapPassport" hydrate-on-visible />
         </div>
       </section>
       <section class="mt-10" aria-labelledby="destinations-heading">
@@ -340,7 +341,13 @@ async function share() {
             {{ item.label }}<span class="opacity-60">{{ item.count }}</span>
           </button>
         </div>
-        <DestinationTable v-if="resultRows.length" :rows="resultRows" :columns="columns" /><EmptyState v-else
+        <!-- The table has one row per destination and nothing to click, so it hydrates only on interaction. -->
+        <LazyDestinationTable
+          v-if="resultRows.length"
+          :rows="resultRows"
+          :columns="columns"
+          hydrate-on-interaction
+        /><EmptyState v-else
           ><button type="button" class="text-sm text-emerald-800 underline" @click="clearFilters">
             Clear filters
           </button></EmptyState
