@@ -117,7 +117,7 @@ TypeScript stays on 6.x. TypeScript 7 is the native compiler without a JavaScrip
   - rules change without a new date
   - more than 5% of rules change; `--accept-large-change` waives only this check.
 - The sync's report is `src/.data/passports/last-check.json`. `WIKIMEDIA_CONTACT` goes into its User-Agent.
-- `GET /api/passports` feeds the home page search and `/passports`, which is both the passport list and the ranking; `/rankings` redirects there. `GET /api/compare?p1=nz&p2=ru&s1=latest` feeds the comparison: up to three passports, unknown passports return 400, and a snapshot the app no longer holds falls back to the latest.
+- `GET /api/passports` feeds the directory and ranking. `GET /api/compare?p1=nz&p2=ru&s1=latest` feeds the comparison: up to three passports, unknown passports return 400, and a snapshot the app no longer holds falls back to the latest.
 - Pages set their title, description, canonical link and share-card tags with `usePageSeo` (`src/app/composables/usePageSeo.ts`). `/sitemap.xml` and `/robots.txt` are server routes, and `src/public/og-image.png` is the share image.
 - The site does not say where its data comes from, except in the Credits section of the About page, which CC BY-SA 4.0 requires. Keep source names out of other page text.
 

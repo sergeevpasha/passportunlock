@@ -115,23 +115,6 @@ export function isVisaFree(rule: EntryRule) {
   return rule.status === 'visa free';
 }
 
-/** Which of the rules, by index, are the easiest way in: the least demanding entry type, then the longest stay when
- * every rule of that type states one. Home countries and unconfirmed rules are left out. Empty when the remaining rules
- * can't be told apart, so only real differences are marked. */
-export function easiestRules(rules: EntryRule[]): number[] {
-  const comparable = rules.flatMap((rule, index) => {
-    const rank = requirementTypes.indexOf(rule.status as RequirementType);
-    return rank < 0 ? [] : [{ index, rank, days: rule.days }];
-  });
-  const rank = Math.min(...comparable.map(rule => rule.rank));
-  let easiest = comparable.filter(rule => rule.rank === rank);
-  if (easiest.every(rule => rule.days)) {
-    const longest = Math.max(...easiest.map(rule => rule.days!));
-    easiest = easiest.filter(rule => rule.days === longest);
-  }
-  return easiest.length < comparable.length ? easiest.map(rule => rule.index) : [];
-}
-
 export type ComparisonFilter = 'all' | 'different' | 'shared' | 'combined';
 
 /** The same access predicates drive both the destination list and its summary counts. */

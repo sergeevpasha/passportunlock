@@ -3,15 +3,18 @@ const navigation = [
   { to: '/', label: 'Overview', icon: 'grid' },
   { to: '/passports', label: 'Passports', icon: 'passport' },
   { to: '/compare', label: 'Compare', icon: 'compare' },
+  { to: '/rankings', label: 'Ranking', icon: 'ranking' },
 ] as const;
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-canvas font-sans text-ink antialiased selection:bg-lime-200">
+  <div
+    class="flex min-h-screen flex-col bg-[#f8f9f5] font-sans text-[#202923] antialiased selection:bg-lime-200 [&_:focus-visible]:outline-2 [&_:focus-visible]:outline-offset-4 [&_:focus-visible]:outline-emerald-700 [&_button:not(:disabled)]:cursor-pointer [&_button:disabled]:cursor-not-allowed [&_select]:cursor-pointer"
+  >
     <a href="#main" class="fixed -top-20 left-4 z-50 rounded-lg bg-emerald-900 px-5 py-3 text-white focus:top-4"
       >Skip to content</a
     >
-    <header class="border-b border-stone-200/80 bg-canvas">
+    <header class="border-b border-stone-200/80 bg-[#f8f9f5]">
       <div
         class="mx-auto flex max-w-[1320px] flex-wrap items-center justify-between gap-5 px-5 pt-5 pb-3 sm:px-8 lg:h-22 lg:flex-nowrap lg:px-12 lg:py-0"
       >
@@ -20,13 +23,14 @@ const navigation = [
         </NuxtLink>
         <nav
           aria-label="Main navigation"
-          class="order-3 flex w-full justify-between gap-1 lg:order-none lg:w-auto lg:gap-2"
+          class="order-3 flex w-full justify-between gap-1 overflow-x-auto lg:order-none lg:w-auto lg:gap-2"
         >
           <NuxtLink
             v-for="item in navigation"
             :key="item.to"
             :to="item.to"
-            class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium whitespace-nowrap text-stone-600 transition-colors hover:bg-stone-200/60 hover:text-emerald-900 motion-reduce:transition-none aria-[current=page]:bg-white aria-[current=page]:text-emerald-900 aria-[current=page]:shadow-xs aria-[current=page]:ring-1 aria-[current=page]:ring-stone-200 sm:px-4"
+            class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-2.5 text-xs font-medium whitespace-nowrap text-stone-500 transition-colors hover:bg-stone-200/60 hover:text-emerald-900 motion-reduce:transition-none sm:px-4 sm:text-sm"
+            exact-active-class="bg-white text-emerald-900 shadow-xs ring-1 ring-stone-200"
           >
             <AppIcon :name="item.icon" :size="16" class="hidden sm:block" />{{ item.label }}
           </NuxtLink>
@@ -34,7 +38,7 @@ const navigation = [
         <NuxtLink
           to="/about"
           aria-label="About the data"
-          class="flex min-h-10 items-center gap-1.5 text-sm text-stone-600 hover:text-emerald-800 aria-[current=page]:font-semibold aria-[current=page]:text-emerald-900"
+          class="flex items-center gap-1.5 text-xs text-stone-500 hover:text-emerald-800"
           ><AppIcon name="info" :size="16" /><span class="hidden sm:inline">About the data</span></NuxtLink
         >
       </div>
@@ -44,7 +48,7 @@ const navigation = [
     </main>
     <footer class="mt-12 border-t border-stone-200">
       <div
-        class="mx-auto flex max-w-[1320px] flex-col justify-between gap-5 px-5 py-7 text-xs text-stone-600 sm:flex-row sm:items-center sm:px-8 lg:px-12"
+        class="mx-auto flex max-w-[1320px] flex-col justify-between gap-5 px-5 py-7 text-xs text-stone-500 sm:flex-row sm:items-center sm:px-8 lg:px-12"
       >
         <p>Entry rules change. Confirm them with the destination before you travel.</p>
         <div class="flex shrink-0 gap-5">
