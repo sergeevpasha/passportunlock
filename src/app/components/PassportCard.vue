@@ -18,7 +18,7 @@ defineEmits<{ toggle: [code: string] }>();
       @click="$emit('toggle', passport.code)"
     >
       <div class="flex items-start justify-between">
-        <PassportCoverImage :code="passport.code" :width="64" /><span
+        <CountryFlag :code="passport.code" :size="38" /><span
           class="flex h-6 w-6 items-center justify-center rounded-full border"
           :class="
             selected

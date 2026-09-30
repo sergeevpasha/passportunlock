@@ -66,12 +66,15 @@ function clearFilters() {
     <PageBreadcrumbs :items="[{ label: 'Passports', to: '/passports' }, { label: name }]" />
     <div class="mb-9 flex flex-wrap items-end justify-between gap-6">
       <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:gap-8">
-        <PassportCoverImage
-          :code="country.code"
-          :width="160"
+        <!-- Every cover is 480×720 with the same outline. -->
+        <img
+          :src="`/covers/480/${country.code.toLowerCase()}.webp`"
           :alt="`Cover of the ${name} passport`"
-          eager
-          class="w-28 sm:w-36 lg:w-40"
+          width="160"
+          height="240"
+          fetchpriority="high"
+          decoding="async"
+          class="h-auto w-28 shrink-0 drop-shadow-[0_3px_6px_rgb(28_25_23/0.22)] sm:w-36 lg:w-40"
         />
         <div>
           <p class="mb-3 text-[11px] font-semibold tracking-[0.18em] text-emerald-800 uppercase">Passport</p>
@@ -88,6 +91,11 @@ function clearFilters() {
           :to="{ path: '/compare', query: { p1: country.code.toLowerCase() } }"
           class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 text-xs font-medium hover:border-emerald-700"
           ><AppIcon name="compare" :size="16" />Compare with other passports</NuxtLink
+        >
+        <NuxtLink
+          to="/passports/covers"
+          class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 text-xs font-medium hover:border-emerald-700"
+          ><AppIcon name="passport" :size="16" />All passport covers</NuxtLink
         >
         <DataNote :date="data?.sourceDate" />
       </div>

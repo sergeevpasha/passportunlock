@@ -14,7 +14,7 @@ function size(file: string) {
 }
 
 describe('passport covers', () => {
-  it.each([160, 480])('has a %ipx cover of the same size for every passport', width => {
+  it.each([240, 480])('has a %ipx cover of the same size for every passport', width => {
     const files = readdirSync(directory(width)).sort();
     expect(files).toEqual(
       Object.keys(countrySlugs)

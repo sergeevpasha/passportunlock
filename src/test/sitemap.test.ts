@@ -28,9 +28,10 @@ describe('sitemap', () => {
     const [pages, ...entries] = files;
     expect(pages!.paths).toContain('/destinations');
     expect(pages!.paths).toContain('/passports/new-zealand');
+    expect(pages!.paths).toContain('/passports/covers');
     expect(pages!.paths.some(path => path.startsWith('/compare?'))).toBe(false);
     expect(pages!.paths).toContain('/destinations/new-zealand');
-    expect(pages!.paths).toHaveLength(6 + 199 * 2);
+    expect(pages!.paths).toHaveLength(7 + 199 * 2);
     const rules = entries.flatMap(file => file.paths);
     const confirmed = Object.values(matrix).reduce((sum, row) => sum + Object.keys(row).length, 0);
     expect(rules).toHaveLength(confirmed);

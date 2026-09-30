@@ -39,8 +39,14 @@ function resetFilters() {
       eyebrow="01 / Passports"
       title="All passports"
       description="Each passport with the number of destinations it can visit without a visa, and its rank. Select up to three to compare."
-      ><DataNote :date="data?.sourceDate"
-    /></PageHeading>
+      ><div class="flex flex-col items-start gap-3 sm:items-end">
+        <NuxtLink
+          to="/passports/covers"
+          class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 text-xs font-medium hover:border-emerald-700"
+          ><AppIcon name="passport" :size="16" />See all passport covers</NuxtLink
+        >
+        <DataNote :date="data?.sourceDate" /></div
+    ></PageHeading>
     <CountryFilters v-model:search="search" v-model:group="group" placeholder="Find a passport…">
       <SelectMenu
         v-model="sort"
