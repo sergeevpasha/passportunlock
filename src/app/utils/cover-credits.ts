@@ -51,28 +51,10 @@ export const coverCredits: Record<string, CoverCredit> = {
     url: 'https://commons.wikimedia.org/wiki/File:Novo_Passaporte_Brasileiro.png',
     license: 'CC BY-SA 4.0',
   },
-  BY: {
-    title: 'Belarus Passport',
-    author: 'มองโกเลีย๔๔',
-    url: 'https://commons.wikimedia.org/wiki/File:Belarus_Passport.svg',
-    license: 'CC BY-SA 4.0',
-  },
   CI: {
     title: 'Passeport Ivoirien',
     author: 'Soren17',
     url: 'https://commons.wikimedia.org/wiki/File:Passeport_Ivoirien.png',
-    license: 'CC BY-SA 4.0',
-  },
-  CO: {
-    title: 'Pasaporte Ordinario Colombiano 2026',
-    author: 'Rpou08',
-    url: 'https://commons.wikimedia.org/wiki/File:Pasaporte_Ordinario_Colombiano_2026.jpg',
-    license: 'CC BY 4.0',
-  },
-  CR: {
-    title: 'Portada del Pasaporte Costarricense desde 2022',
-    author: 'Presidencia de la República de Costa Rica',
-    url: 'https://commons.wikimedia.org/wiki/File:Portada_del_Pasaporte_Costarricense_desde_2022.png',
     license: 'CC BY-SA 4.0',
   },
   CZ: {
@@ -99,12 +81,6 @@ export const coverCredits: Record<string, CoverCredit> = {
     url: 'https://commons.wikimedia.org/wiki/File:Cover_of_Eritrean_Passport.jpeg',
     license: 'CC BY-SA 3.0',
   },
-  FR: {
-    title: 'French Passport Cover',
-    author: 'RainbowSilver2ndBackup & Futurhit12',
-    url: 'https://commons.wikimedia.org/wiki/File:French_Passport_Cover.svg',
-    license: 'CC BY-SA 4.0',
-  },
   GA: {
     title: 'Cover of Gabonese passport',
     author: 'Wikola',
@@ -117,22 +93,10 @@ export const coverCredits: Record<string, CoverCredit> = {
     url: 'https://commons.wikimedia.org/wiki/File:British_Passport_December_2025.svg',
     license: 'CC BY 4.0',
   },
-  GD: {
-    title: 'Caribbean Community Grenada Passport',
-    author: 'Jura695',
-    url: 'https://commons.wikimedia.org/wiki/File:Caribbean_Community_Grenada_Passport.jpg',
-    license: 'CC BY-SA 4.0',
-  },
   HN: {
     title: 'Honduran Passport Front Cover 2022',
     author: 'Ernestosierra04',
     url: 'https://commons.wikimedia.org/wiki/File:Honduran_Passport_Front_Cover_2022.jpg',
-    license: 'CC BY-SA 4.0',
-  },
-  HT: {
-    title: 'Passeport Haïti',
-    author: 'Willy509',
-    url: 'https://commons.wikimedia.org/wiki/File:Passeport_Ha%C3%AFti.webp',
     license: 'CC BY-SA 4.0',
   },
   IL: {
@@ -181,12 +145,6 @@ export const coverCredits: Record<string, CoverCredit> = {
     title: 'Laos Passport',
     author: 'มองโกเลีย๔๔',
     url: 'https://commons.wikimedia.org/wiki/File:Laos_Passport.svg',
-    license: 'CC BY-SA 4.0',
-  },
-  LR: {
-    title: 'Liberian Passport',
-    author: 'Kernel NickM',
-    url: 'https://commons.wikimedia.org/wiki/File:Liberian_Passport.jpg',
     license: 'CC BY-SA 4.0',
   },
   LU: {
@@ -247,12 +205,6 @@ export const coverCredits: Record<string, CoverCredit> = {
     title: 'NepaliEpassportcover',
     author: 'Kinsu08',
     url: 'https://commons.wikimedia.org/wiki/File:NepaliEpassportcover.jpg',
-    license: 'CC BY-SA 4.0',
-  },
-  PA: {
-    title: 'Front cover of the Panamanian biometric passport',
-    author: 'ElliotHewitt',
-    url: 'https://commons.wikimedia.org/wiki/File:Front_cover_of_the_Panamanian_biometric_passport.jpg',
     license: 'CC BY-SA 4.0',
   },
   PL: {
