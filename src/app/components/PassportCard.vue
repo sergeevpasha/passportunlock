@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PassportSummary } from '#shared/catalogue';
+import { passportPath } from '#shared/country-paths';
 defineProps<{ passport: PassportSummary; selected: boolean }>();
 defineEmits<{ toggle: [code: string] }>();
 </script>
@@ -42,7 +43,7 @@ defineEmits<{ toggle: [code: string] }>();
       </div>
     </button>
     <NuxtLink
-      :to="{ path: '/compare', query: { p1: passport.code.toLowerCase() } }"
+      :to="passportPath(passport.code)"
       class="mt-4 flex items-center justify-between border-t border-stone-100 pt-3 text-xs font-medium text-emerald-800 hover:text-emerald-600"
       ><span>View destinations</span><AppIcon name="arrow" :size="16"
     /></NuxtLink>

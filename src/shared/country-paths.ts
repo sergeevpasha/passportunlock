@@ -218,6 +218,11 @@ export function countryFromSegment(segment: unknown): { code: string; canonical:
   return Object.hasOwn(countrySlugs, upper) ? { code: upper, canonical: false } : undefined;
 }
 
+/** Every destination's rule for one passport. */
+export function passportPath(code: string) {
+  return `/passports/${countrySlug(code)}`;
+}
+
 /** Every passport's rule for one destination. */
 export function destinationPath(code: string) {
   return `/destinations/${countrySlug(code)}`;

@@ -27,7 +27,8 @@ describe('sitemap', () => {
     ]);
     const [pages, ...entries] = files;
     expect(pages!.paths).toContain('/destinations');
-    expect(pages!.paths).toContain('/compare?p1=nz');
+    expect(pages!.paths).toContain('/passports/new-zealand');
+    expect(pages!.paths.some(path => path.startsWith('/compare?'))).toBe(false);
     expect(pages!.paths).toContain('/destinations/new-zealand');
     expect(pages!.paths).toHaveLength(6 + 199 * 2);
     const rules = entries.flatMap(file => file.paths);

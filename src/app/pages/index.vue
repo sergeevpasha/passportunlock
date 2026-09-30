@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { passportPath } from '#shared/country-paths';
 import { dateLabel } from '~/utils/entry';
 const description =
   'Check whether you need a visa for your trip, see where each of 199 passports can travel without one, compare passports side by side, and see how they rank.';
@@ -179,7 +180,7 @@ const featured = computed(() => data.value?.passports.slice(0, 4) ?? []);
         <NuxtLink
           v-for="passport in featured"
           :key="passport.code"
-          :to="{ path: '/compare', query: { p1: passport.code.toLowerCase() } }"
+          :to="passportPath(passport.code)"
           class="rounded-xl border border-stone-200/80 bg-white/70 p-4 transition-colors hover:border-emerald-700/40 hover:bg-white"
         >
           <div class="flex items-center justify-between">

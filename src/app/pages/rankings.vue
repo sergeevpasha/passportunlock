@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { byRank, matchesCountry, rankOf, scoreOf, scores } from '#shared/catalogue';
 import { allCountries, countryGroupIds } from '#shared/countries';
+import { passportPath } from '#shared/country-paths';
 const { data, error, refresh } = await useFetch('/api/passports');
 usePageSeo({
   title: 'Passport ranking · Passport Unlock',
@@ -23,7 +24,7 @@ const rows = computed(() =>
       ...passport,
       rank: rankOf(passport, score.value),
       score: scoreOf(passport, score.value),
-      href: `/compare?p1=${passport.code.toLowerCase()}`,
+      href: passportPath(passport.code),
       linkLabel: `View ${passport.name} destinations`,
     }))
 );

@@ -4,9 +4,17 @@ import { entryClasses } from '~/utils/entry';
 import { iconPaths } from '~/utils/icons';
 import { followLink } from '~/utils/links';
 const props = defineProps<{
-  rows: { code: string; code3: string; name: string; region: string; rule: EntryRule; href: string }[];
-  /** The destination, which names each row's link. */
-  destination: string;
+  /** A passport's or a destination's rule for each country, linking to the page for that pair. */
+  rows: {
+    code: string;
+    code3: string;
+    name: string;
+    region: string;
+    rule: EntryRule;
+    href: string;
+    /** Names the arrow link, whose text is only an icon. */
+    linkLabel: string;
+  }[];
 }>();
 
 // Like the ranking rows, these are plain links and images rather than components, so they are cheap to hydrate.
@@ -61,7 +69,7 @@ onNuxtReady(() => {
       <td class="hidden px-6 py-3 text-right sm:table-cell">
         <a
           :href="row.href"
-          :aria-label="`${row.name} passport holders visiting ${destination}`"
+          :aria-label="row.linkLabel"
           class="inline-flex h-8 w-8 items-center justify-center rounded-full text-stone-400 group-hover:bg-emerald-100 group-hover:text-emerald-800"
           ><svg
             width="17"

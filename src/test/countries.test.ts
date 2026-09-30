@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { countryGroups, countryNameInText, countryRegion, inCountryGroup, regionGroups } from '#shared/countries';
-import { countryFromSegment, countrySlug, countrySlugs, destinationPath, entryPath } from '#shared/country-paths';
+import {
+  countryFromSegment,
+  countrySlug,
+  countrySlugs,
+  destinationPath,
+  entryPath,
+  passportPath,
+} from '#shared/country-paths';
 import wikipedia from '../server/data/2026-09-28.json';
 
 const codes = Object.keys(wikipedia.matrix);
@@ -22,7 +29,8 @@ describe('country addresses', () => {
     for (const segment of ['atlantis', 'xx', '', 'constructor', '__proto__', undefined, ['jp']])
       expect(countryFromSegment(segment)).toBeUndefined();
   });
-  it('builds destination and entry paths from slugs', () => {
+  it('builds passport, destination and entry paths from slugs', () => {
+    expect(passportPath('NZ')).toBe('/passports/new-zealand');
     expect(destinationPath('JP')).toBe('/destinations/japan');
     expect(entryPath('US', 'de')).toBe('/destinations/united-states/germany');
   });

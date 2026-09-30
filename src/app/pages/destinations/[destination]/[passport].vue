@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { countryNameInText } from '#shared/countries';
-import { countryFromSegment, destinationPath, entryPath } from '#shared/country-paths';
+import { countryFromSegment, destinationPath, entryPath, passportPath } from '#shared/country-paths';
 import { entryDescriptions } from '#shared/passports';
 import { dateLabel, entryAnswer, entryClasses, entryShortLabels } from '~/utils/entry';
 import { followLink } from '~/utils/links';
@@ -113,7 +113,7 @@ useSeoMeta({ robots: () => (data.value?.rule.status === 'unknown' ? 'noindex' : 
           ></span>
         </NuxtLink>
         <NuxtLink
-          :to="{ path: '/compare', query: { p1: passport.code.toLowerCase() } }"
+          :to="passportPath(passport.code)"
           class="group flex flex-col rounded-2xl border border-stone-200 bg-white p-6 transition-colors hover:border-emerald-800/30 motion-reduce:transition-none"
         >
           <span class="flex items-center gap-2 text-xs font-medium text-stone-600"
@@ -156,7 +156,7 @@ useSeoMeta({ robots: () => (data.value?.rule.status === 'unknown' ? 'noindex' : 
       </div>
       <section v-if="data.nearby.length" class="mt-11" aria-labelledby="nearby-heading">
         <h2 id="nearby-heading" class="text-xl font-semibold tracking-tight">
-          More of {{ regionInText }} with a {{ passportName }} passport
+          More of {{ regionInText }} for {{ passportName }} passport holders
         </h2>
         <!-- Plain links keep these rows cheap to hydrate; the one listener keeps their clicks in the app. -->
         <ul class="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3" @click="followLink">

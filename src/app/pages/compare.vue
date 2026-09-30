@@ -9,6 +9,7 @@ import {
 } from '#shared/passports';
 import { matchesCountry } from '#shared/catalogue';
 import { allCountries } from '#shared/countries';
+import { passportPath } from '#shared/country-paths';
 import { comparisonQuery, maxPassports } from '#shared/comparison-query';
 import { dateLabel } from '~/utils/entry';
 import { comparisonCsv } from '~/utils/export-comparison';
@@ -38,7 +39,8 @@ const rows = computed(() => data.value?.rows ?? []);
 const codes = computed(() => columns.value.map(column => column.code));
 const stats = computed(() => comparisonStats(rows.value, codes.value));
 const route = useRoute();
-// Each set of passports is its own page; snapshot choices only change the view, so they stay out of the address.
+// Each set of passports is its own page; snapshot choices only change the view, so they stay out of the address. A
+// single passport has a page of its own, which search engines are pointed to instead.
 usePageSeo({
   title: () => {
     const names = data.value?.columns.map(column => column.name) ?? [];
@@ -56,10 +58,11 @@ usePageSeo({
     const all = names.length === 2 ? 'both' : 'all three';
     return `${names.slice(0, -1).join(', ')} and ${names.at(-1)} passports compared: ${stats.value.combined} destinations are visa-free with at least one of them, ${stats.value.shared} with ${all}.`;
   },
-  path: () =>
-    route.query.p1
-      ? `/compare?${new URLSearchParams(comparisonQuery(selections.value.map(({ code }) => ({ code }))))}`
-      : '/compare',
+  path: () => {
+    if (!route.query.p1) return '/compare';
+    if (selections.value.length === 1) return passportPath(selections.value[0]!.code);
+    return `/compare?${new URLSearchParams(comparisonQuery(selections.value.map(({ code }) => ({ code }))))}`;
+  },
 });
 const snapshotOptions = computed(() =>
   data.value

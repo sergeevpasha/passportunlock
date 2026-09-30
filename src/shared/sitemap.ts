@@ -1,4 +1,4 @@
-import { countrySlug, destinationPath, entryPath } from './country-paths';
+import { countrySlug, destinationPath, entryPath, passportPath } from './country-paths';
 import { ruleFor, type VisaMatrix } from './passports';
 
 const escapeXml = (text: string) =>
@@ -22,7 +22,7 @@ export function sitemapIndexXml(origin: string, paths: string[], lastModified: s
 
 const entryFiles = 4;
 
-/** The site's sitemaps: its pages with one per passport and destination, then every passport's page for each
+/** The site's sitemaps: its pages with each passport's and destination's, then every passport's page for each
  * destination, split by destination into files of about 10,000 addresses. A rule that isn't confirmed is left out,
  * as its page isn't indexed. */
 export function sitemapFiles(matrix: VisaMatrix): { name: string; paths: string[] }[] {
@@ -38,7 +38,7 @@ export function sitemapFiles(matrix: VisaMatrix): { name: string; paths: string[
         '/compare',
         '/rankings',
         '/about',
-        ...codes.map(code => `/compare?p1=${code.toLowerCase()}`),
+        ...codes.map(passportPath),
         ...codes.map(destinationPath),
       ],
     },
