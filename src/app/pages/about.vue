@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { countryGroups } from '#shared/countries';
 import { entryDescriptions, requirementTypes } from '#shared/passports';
+import { coverCredits, coverLicenses } from '~/utils/cover-credits';
 import { dateLabel } from '~/utils/entry';
 usePageSeo({
   title: 'About the data · Passport Unlock',
@@ -10,6 +11,16 @@ usePageSeo({
 const { data } = await useFetch('/api/passports');
 const types = [...requirementTypes, 'domestic', 'unknown'] as const;
 const groups = countryGroups.filter(group => group.kind === 'Groups');
+const covers = computed(() =>
+  Object.entries(coverCredits)
+    .map(([code, credit]) => ({
+      ...credit,
+      code,
+      country: data.value?.passports.find(passport => passport.code === code)?.name ?? code,
+      licenseUrl: coverLicenses[credit.license],
+    }))
+    .sort((a, b) => a.country.localeCompare(b.country))
+);
 </script>
 
 <template>
@@ -149,6 +160,23 @@ const groups = countryGroups.filter(group => group.kind === 'Groups');
         <a href="/licenses/d3-maps-atlas.txt" class="text-emerald-800 underline underline-offset-4">D3 Maps Atlas</a>.
         Flags: <a href="/licenses/flag-icons.txt" class="text-emerald-800 underline underline-offset-4">flag-icons</a>.
       </p>
+      <p class="mt-4 text-sm leading-7 text-stone-500">
+        Passport cover images are recreations based on photographs and scans of each passport. Those adapted from the
+        works below are shared under the same licence as the work they adapt.
+      </p>
+      <details id="cover-credits" class="mt-3">
+        <summary class="cursor-pointer text-sm font-medium text-emerald-800">Cover image credits</summary>
+        <ul class="mt-3 grid gap-x-8 gap-y-2 text-xs leading-5 text-stone-500 sm:grid-cols-2">
+          <li v-for="cover in covers" :key="cover.code">
+            {{ cover.country }}:
+            <a :href="cover.url" class="text-emerald-800 underline underline-offset-4">{{ cover.title }}</a> by
+            {{ cover.author }},
+            <a :href="cover.licenseUrl" class="whitespace-nowrap text-emerald-800 underline underline-offset-4">{{
+              cover.license
+            }}</a>
+          </li>
+        </ul>
+      </details>
     </section>
   </article>
 </template>

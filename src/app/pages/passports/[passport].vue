@@ -65,14 +65,23 @@ function clearFilters() {
   <div>
     <PageBreadcrumbs :items="[{ label: 'Passports', to: '/passports' }, { label: name }]" />
     <div class="mb-9 flex flex-wrap items-end justify-between gap-6">
-      <div>
-        <p class="mb-3 text-[11px] font-semibold tracking-[0.18em] text-emerald-800 uppercase">Passport</p>
-        <h1 class="flex items-center gap-4 text-4xl leading-tight font-semibold tracking-[-0.045em] sm:text-5xl">
-          <CountryFlag :code="country.code" :size="44" eager />{{ name }} passport
-        </h1>
-        <p class="mt-4 max-w-2xl text-sm leading-7 text-stone-500 sm:text-base">
-          Where {{ name }} passport holders can travel without a visa, and the entry rule for every other destination.
-        </p>
+      <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:gap-8">
+        <PassportCoverImage
+          :code="country.code"
+          :width="160"
+          :alt="`Cover of the ${name} passport`"
+          eager
+          class="w-28 sm:w-36 lg:w-40"
+        />
+        <div>
+          <p class="mb-3 text-[11px] font-semibold tracking-[0.18em] text-emerald-800 uppercase">Passport</p>
+          <h1 class="flex items-center gap-4 text-4xl leading-tight font-semibold tracking-[-0.045em] sm:text-5xl">
+            <CountryFlag :code="country.code" :size="44" eager />{{ name }} passport
+          </h1>
+          <p class="mt-4 max-w-2xl text-sm leading-7 text-stone-500 sm:text-base">
+            Where {{ name }} passport holders can travel without a visa, and the entry rule for every other destination.
+          </p>
+        </div>
       </div>
       <div class="flex flex-col items-start gap-3 sm:items-end">
         <NuxtLink
