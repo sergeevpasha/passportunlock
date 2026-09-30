@@ -3,10 +3,12 @@ import {
   comparisonStats,
   entryLabels,
   matchesComparisonFilter,
+  mobilityScore,
   requirementTypes,
   type ComparisonFilter,
 } from '#shared/passports';
 import { matchesCountry } from '#shared/catalogue';
+import { allCountries } from '#shared/countries';
 import { comparisonQuery, maxPassports } from '#shared/comparison-query';
 import { dateLabel } from '~/utils/entry';
 import { comparisonCsv } from '~/utils/export-comparison';
@@ -15,7 +17,7 @@ const { data, error, status, refresh } = await request;
 const picker = useTemplateRef('picker');
 const pickerIndex = ref(0);
 const search = ref('');
-const region = ref('All regions');
+const group = ref(allCountries);
 const filter = ref<ComparisonFilter>('all');
 const category = ref('all');
 const mapPassport = ref<number | 'combined'>('combined');
@@ -29,6 +31,9 @@ const toast = ref('');
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 onBeforeUnmount(() => clearTimeout(toastTimer));
 const columns = computed(() => data.value?.columns ?? []);
+const pickerCountries = computed(() =>
+  (data.value?.countries ?? []).map(country => ({ ...country, detail: `${country.visaFree} visa-free` }))
+);
 const rows = computed(() => data.value?.rows ?? []);
 const codes = computed(() => columns.value.map(column => column.code));
 const stats = computed(() => comparisonStats(rows.value, codes.value));
@@ -74,7 +79,7 @@ const mapOptions = computed(() => [
 const mixedDates = computed(() => new Set(columns.value.map(column => column.snapshot.id)).size > 1);
 const resultRows = computed(() =>
   rows.value.filter(row => {
-    if (!matchesCountry(row, search.value, region.value)) return false;
+    if (!matchesCountry(row, search.value, group.value)) return false;
     if (category.value !== 'all' && !row.rules.some(rule => rule.status === category.value)) return false;
     return matchesComparisonFilter(row, codes.value, filter.value);
   })
@@ -102,7 +107,7 @@ function choosePassport(index: number) {
 }
 function clearFilters() {
   search.value = '';
-  region.value = 'All regions';
+  group.value = allCountries;
   category.value = 'all';
   filter.value = 'all';
 }
@@ -138,7 +143,7 @@ async function share() {
 <template>
   <div>
     <PageHeading
-      eyebrow="02 / Compare"
+      eyebrow="03 / Compare"
       title="Compare passports"
       description="The entry rule for every destination, for up to three passports side by side, and where they differ."
     >
@@ -231,6 +236,10 @@ async function share() {
               <p class="mt-0.5 text-[10px] text-stone-500">Visa / restricted</p>
             </div>
           </div>
+          <p class="mt-4 flex items-center justify-between border-t border-stone-100 pt-3 text-xs text-stone-500">
+            <span>Mobility score: visa-free, on arrival or eTA</span
+            ><span class="font-semibold text-[#202923] tabular-nums">{{ mobilityScore(column.counts) }}</span>
+          </p>
           <template v-if="data.snapshots.length > 1">
             <label :for="`snapshot-${index}`" class="mt-5 block text-[10px] text-stone-500">Data snapshot</label
             ><SelectMenu
@@ -321,7 +330,7 @@ async function share() {
             {{ resultRows.length }} {{ resultRows.length === 1 ? 'destination' : 'destinations' }}
           </p>
         </div>
-        <CountryFilters v-model:search="search" v-model:region="region" placeholder="Search destinations…"
+        <CountryFilters v-model:search="search" v-model:group="group" placeholder="Search destinations…"
           ><SelectMenu v-model="category" :options="categories" label="Filter by entry requirement" class="sm:w-52"
         /></CountryFilters>
         <div class="my-5 flex flex-wrap gap-2">
@@ -359,6 +368,12 @@ async function share() {
         </p>
       </section>
     </div>
-    <PassportPicker v-if="data" ref="picker" :countries="data.countries" @select="setPassport(pickerIndex, $event)" />
+    <CountryPicker
+      v-if="data"
+      ref="picker"
+      :countries="pickerCountries"
+      icon="plus"
+      @select="setPassport(pickerIndex, $event)"
+    />
   </div>
 </template>

@@ -3,13 +3,25 @@ import { worldCountries } from '~/utils/world-map';
 import { entryShortLabels } from '~/utils/entry';
 import { mapAccess, type MapAccess } from '#shared/map-access';
 import { entryDescriptions, entryLabels, requirementTypes, type EntryRule } from '#shared/passports';
-const props = defineProps<{
-  rows: { code: string; name: string; rules: EntryRule[] }[];
-  /** The selected passports, in the order of each row's rules. */
-  passports: { name: string }[];
-  /** One passport by index, or the easiest way in with any of them. */
-  passport: number | 'combined';
-}>();
+const props = withDefaults(
+  defineProps<{
+    rows: { code: string; name: string; rules: EntryRule[] }[];
+    /** The selected passports, in the order of each row's rules. */
+    passports: { name: string }[];
+    /** One passport by index, or the easiest way in with any of them. */
+    passport: number | 'combined';
+    /** What each country on the map stands for: a destination of the passports, or a passport visiting one
+     * destination, whose own country is then the home country. */
+    unit?: 'destination' | 'passport';
+    home?: { label: string; description: string };
+    label?: string;
+  }>(),
+  {
+    unit: 'destination',
+    home: () => ({ label: 'Home country', description: entryDescriptions.domestic }),
+    label: 'World map of the easiest way into each destination. The destination table below lists every rule.',
+  }
+);
 
 // One hue per entry type, matching the table's badges. Any two can border each other on a map, so every pair was
 // checked for separation in normal and colour-blind vision; the table below still lists each rule in words.
@@ -38,9 +50,12 @@ const legend = computed(() => {
   }
   return [
     ...requirementTypes.map(type => ({ access: type, label: entryShortLabels[type], count: counts.get(type) ?? 0 })),
-    { access: 'home' as const, label: 'Home country', count: undefined },
+    { access: 'home' as const, label: props.home.label, count: undefined },
     { access: 'unknown' as const, label: 'No data', count: undefined },
-  ].map(item => ({ ...item, description: entryDescriptions[item.access === 'home' ? 'domestic' : item.access] }));
+  ].map(item => ({
+    ...item,
+    description: item.access === 'home' ? props.home.description : entryDescriptions[item.access],
+  }));
 });
 
 // A legend entry explains its type and fades the rest of the map: on hover, on keyboard focus, or when tapped.
@@ -112,7 +127,7 @@ const hovered = computed(() => {
       <svg
         viewBox="0 0 1000 520"
         role="img"
-        aria-label="World map of the easiest way into each destination. The destination table below lists every rule."
+        :aria-label="label"
         class="mx-auto max-h-80 w-full"
         @pointermove="point"
         @pointerdown="point"
@@ -149,7 +164,7 @@ const hovered = computed(() => {
               class="font-medium text-[#202923]"
               >{{ line.label }}</span
             ><span v-if="line.days" class="text-stone-500">{{ line.days }} days</span
-            ><span class="ml-auto pl-4 text-stone-500">{{ line.passport }}</span>
+            ><span v-if="unit === 'destination'" class="ml-auto pl-4 text-stone-500">{{ line.passport }}</span>
           </li>
         </ul>
         <p v-else class="mt-1 text-[11px] text-stone-500">Not in the dataset</p>
@@ -165,7 +180,7 @@ const hovered = computed(() => {
         <span class="flex items-center gap-2 font-semibold text-[#202923]"
           ><span class="h-2.5 w-2.5 rounded-sm" :class="swatches[explanation.access].key" />{{ explanation.label
           }}<span v-if="explanation.count !== undefined" class="font-normal text-stone-500"
-            >{{ explanation.count }} {{ explanation.count === 1 ? 'destination' : 'destinations' }}</span
+            >{{ explanation.count }} {{ explanation.count === 1 ? unit : `${unit}s` }}</span
           ></span
         >
         {{ explanation.description }}

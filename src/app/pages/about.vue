@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import { countryGroups } from '#shared/countries';
 import { entryDescriptions, requirementTypes } from '#shared/passports';
 import { dateLabel } from '~/utils/entry';
 usePageSeo({
   title: 'About the data · Passport Unlock',
   description:
-    'What each entry type means, how passports are scored and compared, and what to check before you travel.',
+    'What each entry type means, how passports and destinations are scored and compared, and what to check before you travel.',
 });
 const { data } = await useFetch('/api/passports');
 const types = [...requirementTypes, 'domestic', 'unknown'] as const;
+const groups = countryGroups.filter(group => group.kind === 'Groups');
 </script>
 
 <template>
@@ -59,8 +61,12 @@ const types = [...requirementTypes, 'domestic', 'unknown'] as const;
             per passport.
           </p>
           <p class="mt-3">
-            Equal scores share a rank. If two passports tie at #1, the next rank is #3. Regional filters retain the
-            global rank. This differs from broader mobility scores such as the Passport Index.
+            Equal scores share a rank. If two passports tie at #1, the next rank is #3. Filters keep the global rank.
+          </p>
+          <p class="mt-3">
+            The ranking can switch to a mobility score, which also counts visas on arrival and eTAs: every destination
+            that needs no visa arranged before travel. Broader indexes count this way too, but the Passport Index also
+            counts eVisas issued within three days, which this data doesn’t tell apart, so its scores still differ.
           </p>
         </div>
         <div>
@@ -76,6 +82,32 @@ const types = [...requirementTypes, 'domestic', 'unknown'] as const;
           </p>
         </div>
       </div>
+    </section>
+    <section class="mt-5 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
+      <h2 class="text-xl font-semibold tracking-tight">Destinations</h2>
+      <p class="mt-3 text-sm leading-7 text-stone-500">
+        Each destination’s page lists the rule for all 198 other passports, and each passport has a page for every
+        destination. Destinations are ranked by the number of passports they let in without a visa or, with the mobility
+        score, without a visa arranged before travel. A rule that isn’t confirmed doesn’t count, so a destination
+        missing from some passports’ rules ranks lower than it might.
+      </p>
+    </section>
+    <section class="mt-5 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
+      <h2 class="text-xl font-semibold tracking-tight">Regions and groups</h2>
+      <p class="mt-3 text-sm leading-7 text-stone-500">
+        Lists can be narrowed to a region or to one of these groups. They count full members as of September 2026:
+        Cyprus hasn’t joined the Schengen Area yet, Venezuela is suspended from Mercosur, and Saudi Arabia, invited to
+        join BRICS from 2024, hasn’t confirmed that it did.
+      </p>
+      <ul class="mt-5 flex flex-wrap gap-2">
+        <li v-for="group in groups" :key="group.id">
+          <NuxtLink
+            :to="{ path: '/rankings', query: { group: group.id } }"
+            class="inline-flex items-center gap-2 rounded-lg border border-stone-200 px-3 py-1.5 text-xs hover:border-emerald-700"
+            >{{ group.label }}<span class="text-stone-500">{{ group.codes.size }}</span></NuxtLink
+          >
+        </li>
+      </ul>
     </section>
     <section class="mt-5 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
       <h2 class="text-xl font-semibold tracking-tight">How entry types are assigned</h2>

@@ -9,6 +9,7 @@ useSeoMeta({
 });
 const pages = [
   { to: '/passports', label: 'Passports', description: 'Every passport with its visa-free count and rank.' },
+  { to: '/destinations', label: 'Destinations', description: 'Every destination with the rule for each passport.' },
   { to: '/compare', label: 'Compare', description: 'Up to three passports side by side.' },
   { to: '/rankings', label: 'Ranking', description: 'Passports ordered by visa-free destinations.' },
 ];
@@ -49,7 +50,7 @@ const goHome = () => clearError({ redirect: '/' });
           Go to the homepage
         </button>
       </div>
-      <ul class="mt-12 grid gap-3 text-left sm:grid-cols-3">
+      <ul class="mt-12 grid gap-3 text-left sm:grid-cols-2">
         <li v-for="page in pages" :key="page.to">
           <NuxtLink
             :to="page.to"

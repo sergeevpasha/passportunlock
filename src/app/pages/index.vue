@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { dateLabel } from '~/utils/entry';
 const description =
-  'See where each of 199 passports can travel without a visa, compare up to three passports side by side, and see how all passports rank.';
+  'Check whether you need a visa for your trip, see where each of 199 passports can travel without one, compare passports side by side, and see how they rank.';
 usePageSeo({ title: 'Passport Unlock · Visa requirements for 199 passports', description });
 useHead({
   script: [
@@ -38,15 +38,11 @@ const featured = computed(() => data.value?.passports.slice(0, 4) ?? []);
           Visa requirements<br /><span class="text-emerald-800">for {{ data?.passports.length ?? 199 }} passports</span>
         </h1>
         <p class="mt-6 max-w-md text-base leading-7 text-stone-500">
-          Look up the entry rule for any destination, compare up to three passports side by side, or see how all
-          passports rank by visa-free destinations.
+          Check the rule for your trip, see who can visit each destination, compare up to three passports side by side,
+          or see how all passports rank.
         </p>
-        <div class="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-stone-500">
-          <span class="inline-flex items-center gap-2"
-            ><AppIcon name="globe" :size="16" /><strong class="font-semibold text-stone-700">198</strong> destinations
-            per passport</span
-          >
-          <span class="inline-flex items-center gap-2"><AppIcon name="compare" :size="16" />Up to 3 side by side</span>
+        <div class="mt-8 max-w-xl rounded-2xl border border-stone-200 bg-white p-5 shadow-xs sm:p-6">
+          <VisaChecker :countries="data?.passports" />
         </div>
       </div>
       <div
@@ -67,7 +63,7 @@ const featured = computed(() => data.value?.passports.slice(0, 4) ?? []);
       <div class="mb-5 flex items-center justify-between gap-3">
         <h2 id="browse-heading" class="text-lg font-semibold tracking-tight">Browse the data</h2>
       </div>
-      <div class="grid gap-4 md:grid-cols-3">
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <NuxtLink
           to="/passports"
           class="group relative flex min-h-65 flex-col overflow-hidden rounded-2xl bg-emerald-900 p-7 text-white transition-transform duration-200 hover:-translate-y-1 motion-reduce:transform-none motion-reduce:transition-none"
@@ -93,13 +89,37 @@ const featured = computed(() => data.value?.passports.slice(0, 4) ?? []);
           </div>
         </NuxtLink>
         <NuxtLink
+          to="/destinations"
+          class="group flex min-h-65 flex-col rounded-2xl border border-stone-200 bg-white p-7 transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-800/30 motion-reduce:transform-none motion-reduce:transition-none"
+        >
+          <div class="mb-8 flex items-center justify-between">
+            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#eff0e9] text-emerald-800"
+              ><AppIcon name="globe" :size="25" /></span
+            ><span class="font-mono text-[11px] text-stone-500">02 / DESTINATIONS</span>
+          </div>
+          <h3 class="text-2xl font-medium tracking-tight">Destinations</h3>
+          <p class="mt-2 max-w-65 text-sm leading-6 text-stone-500">
+            Every destination with the rule for each passport, ranked by how many passports it lets in.
+          </p>
+          <div
+            class="mt-7 flex items-center justify-between border-t border-stone-200 pt-4 text-xs font-medium text-emerald-800"
+          >
+            <span>Browse destinations</span
+            ><AppIcon
+              name="arrow"
+              :size="20"
+              class="transition-transform group-hover:translate-x-1 motion-reduce:transform-none"
+            />
+          </div>
+        </NuxtLink>
+        <NuxtLink
           to="/compare"
           class="group flex min-h-65 flex-col rounded-2xl border border-stone-200 bg-white p-7 transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-800/30 motion-reduce:transform-none motion-reduce:transition-none"
         >
           <div class="mb-8 flex items-center justify-between">
             <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#eff0e9] text-emerald-800"
               ><AppIcon name="compare" :size="25" /></span
-            ><span class="font-mono text-[11px] text-stone-500">02 / COMPARE</span>
+            ><span class="font-mono text-[11px] text-stone-500">03 / COMPARE</span>
           </div>
           <h3 class="text-2xl font-medium tracking-tight">Compare</h3>
           <p class="mt-2 max-w-65 text-sm leading-6 text-stone-500">
@@ -123,11 +143,11 @@ const featured = computed(() => data.value?.passports.slice(0, 4) ?? []);
           <div class="mb-8 flex items-center justify-between">
             <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/70 text-emerald-800"
               ><AppIcon name="ranking" :size="25" /></span
-            ><span class="font-mono text-[11px] text-stone-600">03 / RANKING</span>
+            ><span class="font-mono text-[11px] text-stone-600">04 / RANKING</span>
           </div>
           <h3 class="text-2xl font-medium tracking-tight">Ranking</h3>
           <p class="mt-2 max-w-65 text-sm leading-6 text-stone-600">
-            Passports ordered by the number of destinations they can visit without a visa.
+            Passports ordered by visa-free destinations, or by their mobility score.
           </p>
           <div
             class="mt-7 flex items-center justify-between border-t border-stone-300/70 pt-4 text-xs font-medium text-emerald-800"

@@ -5,7 +5,8 @@
 const model = defineModel<T>({ required: true });
 const props = withDefaults(
   defineProps<{
-    options: { value: T; label: string }[];
+    /** Consecutive options with the same `group` are listed under that heading. */
+    options: { value: T; label: string; group?: string }[];
     /** Accessible name. Leave it out when a <label for> points at `id`. */
     label?: string;
     id?: string;
@@ -26,6 +27,17 @@ const active = ref(0);
 const placement = ref<Record<string, string>>({});
 const selected = computed(() => props.options.findIndex(option => option.value === model.value));
 const last = computed(() => props.options.length - 1);
+const sections = computed(() =>
+  props.options.reduce<{ label?: string; items: { option: (typeof props.options)[number]; index: number }[] }[]>(
+    (list, option, index) => {
+      const section = list.at(-1);
+      if (section && section.label === option.group) section.items.push({ option, index });
+      else list.push({ label: option.group, items: [{ option, index }] });
+      return list;
+    },
+    []
+  )
+);
 
 function place() {
   const trigger = button.value?.getBoundingClientRect();
@@ -181,22 +193,43 @@ onBeforeUnmount(() => listen(false));
           @pointerdown.prevent
         >
           <li
-            v-for="(option, index) in options"
-            :id="optionId(index)"
-            :key="String(option.value)"
-            role="option"
-            :aria-selected="index === selected"
-            class="flex cursor-pointer items-center justify-between gap-6 rounded-lg whitespace-nowrap"
-            :class="[
-              size === 'sm' ? 'px-2.5 py-2 text-xs' : 'px-3 py-2.5 text-sm',
-              index === active ? 'bg-stone-100' : '',
-              index === selected ? 'font-medium text-emerald-900' : 'text-stone-600',
-            ]"
-            @pointermove="active = index"
-            @click="choose(index)"
+            v-for="(section, sectionIndex) in sections"
+            :key="sectionIndex"
+            :role="section.label ? 'group' : 'none'"
+            :aria-labelledby="section.label ? `${baseId}-group-${sectionIndex}` : undefined"
           >
-            {{ option.label }}
-            <AppIcon v-if="index === selected" name="check" :size="size === 'sm' ? 14 : 16" class="text-emerald-700" />
+            <p
+              v-if="section.label"
+              :id="`${baseId}-group-${sectionIndex}`"
+              class="px-3 pt-3 pb-1.5 text-[10px] font-semibold tracking-[0.12em] text-stone-500 uppercase"
+            >
+              {{ section.label }}
+            </p>
+            <ul role="none">
+              <li
+                v-for="{ option, index } in section.items"
+                :id="optionId(index)"
+                :key="String(option.value)"
+                role="option"
+                :aria-selected="index === selected"
+                class="flex cursor-pointer items-center justify-between gap-6 rounded-lg whitespace-nowrap"
+                :class="[
+                  size === 'sm' ? 'px-2.5 py-2 text-xs' : 'px-3 py-2.5 text-sm',
+                  index === active ? 'bg-stone-100' : '',
+                  index === selected ? 'font-medium text-emerald-900' : 'text-stone-600',
+                ]"
+                @pointermove="active = index"
+                @click="choose(index)"
+              >
+                {{ option.label }}
+                <AppIcon
+                  v-if="index === selected"
+                  name="check"
+                  :size="size === 'sm' ? 14 : 16"
+                  class="text-emerald-700"
+                />
+              </li>
+            </ul>
           </li>
         </ul>
       </Transition>

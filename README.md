@@ -1,6 +1,6 @@
 # Passport Unlock
 
-See which countries your passport can visit without a visa, and compare up to three passports side by side.
+Check whether you need a visa for a trip, see which countries your passport can visit without one and which passports each destination lets in, and compare up to three passports side by side.
 
 https://passportunlock.com
 

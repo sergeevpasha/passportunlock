@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { regionGroups } from '#shared/countries';
+import { allCountries, countryGroups } from '#shared/countries';
 withDefaults(defineProps<{ placeholder?: string }>(), { placeholder: 'Search by country or code…' });
 const search = defineModel<string>('search', { required: true });
-const region = defineModel<string>('region', { required: true });
+const group = defineModel<string>('group', { required: true });
 const id = useId();
-const regions = ['All regions', ...Object.keys(regionGroups)].map(name => ({ value: name, label: name }));
+const groups = [
+  { value: allCountries, label: 'All countries' },
+  ...countryGroups.map(item => ({ value: item.id, label: item.label, group: item.kind })),
+];
 </script>
 
 <template>
@@ -20,7 +23,7 @@ const regions = ['All regions', ...Object.keys(regionGroups)].map(name => ({ val
         class="h-12 w-full rounded-xl border border-stone-200 bg-white pr-4 pl-11 text-sm placeholder:text-stone-400"
       />
     </div>
-    <SelectMenu v-model="region" :options="regions" label="Filter by region" class="sm:w-48" />
+    <SelectMenu v-model="group" :options="groups" label="Filter by region or group" class="sm:w-56" />
     <slot />
   </div>
 </template>

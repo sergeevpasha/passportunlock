@@ -1,16 +1,13 @@
-import { sitemapXml } from '#shared/sitemap';
+import { sitemapFiles, sitemapIndexXml } from '#shared/sitemap';
 import { passportSnapshots } from '../utils/passport-data';
 
-// The site's pages, then one comparison page per passport, which shows every destination's rule for it.
+// An index of the site's sitemaps, which are served from /sitemaps/.
 export default defineEventHandler(async event => {
   const latest = (await passportSnapshots())[0]!;
-  const passports = Object.keys(latest.matrix)
-    .sort()
-    .map(code => `/compare?p1=${code.toLowerCase()}`);
   setHeader(event, 'Content-Type', 'application/xml; charset=utf-8');
-  return sitemapXml(
+  return sitemapIndexXml(
     getRequestURL(event).origin,
-    ['/', '/passports', '/compare', '/rankings', '/about', ...passports],
+    sitemapFiles(latest.matrix).map(file => `/sitemaps/${file.name}`),
     latest.sourceDate
   );
 });

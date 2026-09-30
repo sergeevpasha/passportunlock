@@ -36,7 +36,7 @@ The community maintainers publish MIT licenses. That is not independently verifi
 
 1. Define the destination universe and keep it versioned. The prototype's universe is the 199 passports in `src/shared/wikipedia-pages.ts`, each with 198 foreign destinations. Other providers use different universes, so their scores are not directly comparable.
 2. Keep visa-free, visa on arrival, eTA, eVisa, visa required, restricted and unknown separate. Never convert a missing rule into visa-free. Do not infer freedom of movement from an unspecified stay.
-3. The headline here counts strictly `visa free`; it intentionally is not Passport Index's mobility score. Status and stay-duration differences both count as differences.
+3. The headline here counts strictly `visa free`; it intentionally is not Passport Index's mobility score. The ranking can switch to a mobility score of visa-free, visa on arrival and eTA; Passport Index also counts eVisas issued within three days, which the data doesn't distinguish. Status and stay-duration differences both count as differences.
 4. Shared access is the intersection of visa-free destinations. Combined access is the union. Additional access is union minus the first passport's visa-free destinations. Selected home countries are excluded from all three counts, giving them the same comparison universe.
 5. Mixed snapshot dates are allowed for historical exploration and explicitly identified. Their combined count is illustrative, not concurrent travel eligibility. Snapshots are observations, not proof of when a policy began or ended.
 6. A maximum stay may be a shared regional allowance, a rolling window, or conditional on arrival method. A simple `90 days` does not mean 90 new days in each Schengen country.

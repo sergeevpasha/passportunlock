@@ -107,6 +107,26 @@ export function countsFor(matrix: VisaMatrix, passport: string) {
   return counts;
 }
 
+/** How the holders of every other passport enter one destination, by entry type. A missing rule counts as unknown. */
+export function destinationCountsFor(matrix: VisaMatrix, destination: string) {
+  const counts = Object.fromEntries([...requirementTypes, 'unknown'].map(status => [status, 0])) as Record<
+    RequirementType | 'unknown',
+    number
+  >;
+  for (const passport of Object.keys(matrix)) {
+    if (passport !== destination)
+      counts[ruleFor(matrix, passport, destination).status as RequirementType | 'unknown']++;
+  }
+  return counts;
+}
+
+/** Entry types that need no visa arranged before travel. The mobility score counts them, as broader indexes do. */
+export const mobilityTypes = ['visa free', 'visa on arrival', 'eta'] as const satisfies readonly RequirementType[];
+
+export function mobilityScore(counts: Record<RequirementType, number>) {
+  return mobilityTypes.reduce((sum, type) => sum + counts[type], 0);
+}
+
 export function rulesDiffer(rules: EntryRule[]): boolean {
   return new Set(rules.map(rule => `${rule.status}:${rule.days ?? ''}`)).size > 1;
 }

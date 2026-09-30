@@ -2,9 +2,15 @@
 const navigation = [
   { to: '/', label: 'Overview', icon: 'grid' },
   { to: '/passports', label: 'Passports', icon: 'passport' },
+  { to: '/destinations', label: 'Destinations', icon: 'globe' },
   { to: '/compare', label: 'Compare', icon: 'compare' },
   { to: '/rankings', label: 'Ranking', icon: 'ranking' },
 ] as const;
+const current = 'bg-white text-emerald-900 shadow-xs ring-1 ring-stone-200';
+const route = useRoute();
+// A page inside a section, such as one destination, keeps the section highlighted. On narrow screens the Overview
+// link gives way to the others, as the logo also leads home.
+const inSection = (to: string) => to !== '/' && route.path.startsWith(`${to}/`);
 </script>
 
 <template>
@@ -23,14 +29,15 @@ const navigation = [
         </NuxtLink>
         <nav
           aria-label="Main navigation"
-          class="order-3 flex w-full justify-between gap-1 overflow-x-auto lg:order-none lg:w-auto lg:gap-2"
+          class="order-3 flex w-full justify-between overflow-x-auto sm:gap-1 lg:order-none lg:w-auto lg:gap-2"
         >
           <NuxtLink
             v-for="item in navigation"
             :key="item.to"
             :to="item.to"
-            class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-2.5 text-xs font-medium whitespace-nowrap text-stone-500 transition-colors hover:bg-stone-200/60 hover:text-emerald-900 motion-reduce:transition-none sm:px-4 sm:text-sm"
-            exact-active-class="bg-white text-emerald-900 shadow-xs ring-1 ring-stone-200"
+            class="min-h-10 items-center justify-center gap-2 rounded-lg px-1.5 text-xs font-medium whitespace-nowrap text-stone-500 transition-colors hover:bg-stone-200/60 hover:text-emerald-900 motion-reduce:transition-none min-[360px]:px-2.5 sm:px-4 sm:text-sm"
+            :class="[item.to === '/' ? 'hidden md:inline-flex' : 'inline-flex', inSection(item.to) && current]"
+            :exact-active-class="current"
           >
             <AppIcon :name="item.icon" :size="16" class="hidden sm:block" />{{ item.label }}
           </NuxtLink>
@@ -39,7 +46,9 @@ const navigation = [
           to="/about"
           aria-label="About the data"
           class="flex items-center gap-1.5 text-xs text-stone-500 hover:text-emerald-800"
-          ><AppIcon name="info" :size="16" /><span class="hidden sm:inline">About the data</span></NuxtLink
+          ><AppIcon name="info" :size="16" /><span class="hidden sm:inline lg:hidden xl:inline"
+            >About the data</span
+          ></NuxtLink
         >
       </div>
     </header>

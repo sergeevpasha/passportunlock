@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { matchesCountry } from '#shared/catalogue';
 import { maxPassports } from '#shared/comparison-query';
+import { allCountries, countryGroupIds } from '#shared/countries';
 usePageSeo({
   title: 'All passports · Passport Unlock',
   description:
@@ -9,12 +10,12 @@ usePageSeo({
 const { data, error, refresh } = await useFetch('/api/passports');
 const { selected, message, comparisonLink, toggle, clear } = usePassportSelection();
 const search = ref('');
-const region = ref('All regions');
+const group = useQueryFilter('group', countryGroupIds, allCountries);
 const sort = ref('name');
 const visibleCount = ref(24);
 const filtered = computed(() =>
   [...(data.value?.passports ?? [])]
-    .filter(passport => matchesCountry(passport, search.value, region.value))
+    .filter(passport => matchesCountry(passport, search.value, group.value))
     .sort((a, b) =>
       sort.value === 'rank' ? a.rank - b.rank || a.name.localeCompare(b.name) : a.name.localeCompare(b.name)
     )
@@ -23,12 +24,12 @@ const visible = computed(() => filtered.value.slice(0, visibleCount.value));
 const selectedPassports = computed(() =>
   selected.value.flatMap(code => data.value?.passports.find(passport => passport.code === code) ?? [])
 );
-watch([search, region, sort], () => {
+watch([search, group, sort], () => {
   visibleCount.value = 24;
 });
 function resetFilters() {
   search.value = '';
-  region.value = 'All regions';
+  group.value = allCountries;
 }
 </script>
 
@@ -40,7 +41,7 @@ function resetFilters() {
       description="Each passport with the number of destinations it can visit without a visa, and its rank. Select up to three to compare."
       ><DataNote :date="data?.sourceDate"
     /></PageHeading>
-    <CountryFilters v-model:search="search" v-model:region="region" placeholder="Find a passport…">
+    <CountryFilters v-model:search="search" v-model:group="group" placeholder="Find a passport…">
       <SelectMenu
         v-model="sort"
         :options="[
@@ -54,7 +55,7 @@ function resetFilters() {
     <div class="my-5 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
       <p>
         {{ filtered.length }} {{ filtered.length === 1 ? 'passport' : 'passports' }}
-        <span v-if="search || region !== 'All regions'">match your filters</span>
+        <span v-if="search || group !== allCountries">match your filters</span>
       </p>
       <p>Select up to three with <span class="font-semibold text-emerald-800">+</span> to compare them</p>
     </div>
