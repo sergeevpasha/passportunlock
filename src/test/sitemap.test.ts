@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { sitemapFiles, sitemapIndexXml, sitemapXml } from '#shared/sitemap';
 import { parseMatrix } from '#shared/passports';
-import wikipedia from '../server/data/2026-09-28.json';
+import wikipedia from '../server/data/2026-10-05.json';
 
 describe('sitemap', () => {
   it('lists absolute, XML-escaped addresses with their last change', () => {

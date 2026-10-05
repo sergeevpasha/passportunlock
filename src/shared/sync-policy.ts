@@ -18,6 +18,23 @@ export function publicationIssues(
   ];
 }
 
+/** Holds back a snapshot whose notes are incomplete: the shared notes several destinations' rows include are missing,
+ * or more than 1% of notes kept markup that could not be read. */
+export function noteIssues({
+  sharedNotesFound,
+  unreadable,
+  total,
+}: {
+  sharedNotesFound: boolean;
+  unreadable: number;
+  total: number;
+}) {
+  return [
+    ...(sharedNotesFound ? [] : ['Shared notes not found']),
+    ...(total > 0 && unreadable / total > 0.01 ? ['More than 1% of notes are unreadable'] : []),
+  ];
+}
+
 /** Holds back a Wikipedia snapshot when articles are missing or leave out too many destinations. */
 export function coverageIssues({
   missingPages,

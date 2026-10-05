@@ -8,7 +8,7 @@ import {
   entryPath,
   passportPath,
 } from '#shared/country-paths';
-import wikipedia from '../server/data/2026-09-28.json';
+import wikipedia from '../server/data/2026-10-05.json';
 
 const codes = Object.keys(wikipedia.matrix);
 

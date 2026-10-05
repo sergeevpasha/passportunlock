@@ -1,3 +1,5 @@
+import type { OfficialSites, RuleNotes } from './requirements.ts';
+
 export const requirementTypes = [
   'visa free',
   'visa on arrival',
@@ -31,8 +33,16 @@ export interface Snapshot {
   license?: string;
   /** The article revision behind each passport. */
   pages?: Record<string, SnapshotPage>;
+  /** The revision of the shared notes that rows for several passports include. */
+  sharedNotes?: SnapshotPage;
   /** Destinations its article does not list are left out and shown as not confirmed. */
   matrix: VisaMatrix;
+  /** What the articles add to a rule: conditions, exemptions, where the visa is issued. */
+  notes?: RuleNotes;
+  /** The government site for each destination's visa or eTA, where enough articles cite the same one. */
+  officialSites?: OfficialSites;
+  /** Each destination's official visa information page from `visaPages`, minus those the sync found gone. */
+  visaPages?: Record<string, string>;
 }
 export const entryLabels: Record<EntryType, string> = {
   'visa free': 'Visa-free',

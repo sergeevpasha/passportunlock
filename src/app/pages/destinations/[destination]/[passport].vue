@@ -2,7 +2,7 @@
 import { countryNameInText } from '#shared/countries';
 import { countryFromSegment, destinationPath, entryPath, passportPath } from '#shared/country-paths';
 import { entryDescriptions } from '#shared/passports';
-import { dateLabel, entryAnswer, entryClasses, entryShortLabels } from '~/utils/entry';
+import { dateLabel, entryAnswer, entryClasses, entryShortLabels, siteHost, typicalRequirements } from '~/utils/entry';
 import { followLink } from '~/utils/links';
 
 const route = useRoute();
@@ -28,6 +28,30 @@ const answer = computed(() =>
   entryAnswer(data.value?.rule ?? { status: 'unknown' }, passportName.value, destinationInText.value)
 );
 const regionInText = computed(() => (data.value?.region === 'Americas' ? 'the Americas' : data.value?.region));
+const officialSiteLabel = computed(() => {
+  const status = data.value?.rule.status;
+  return `Official ${status === 'eta' ? 'eTA' : status === 'e-visa' ? 'eVisa' : 'visa'} site`;
+});
+// The rule's own official site, or else the destination's page about visas.
+const officialLink = computed(() => {
+  if (data.value?.officialSite) return { url: data.value.officialSite.url, label: officialSiteLabel.value };
+  if (data.value?.visaPage) return { url: data.value.visaPage, label: 'Official visa information' };
+  return undefined;
+});
+// The same for every destination, so it is labelled as typical.
+const typical = computed(() => typicalRequirements[data.value?.rule.status ?? 'unknown'] ?? []);
+const requirementsHeading = computed(() => {
+  switch (data.value?.rule.status) {
+    case 'visa free':
+      return 'Entry conditions';
+    case 'eta':
+      return 'eTA requirements';
+    case 'no admission':
+      return 'Entry restrictions';
+    default:
+      return 'Visa requirements';
+  }
+});
 
 usePageSeo({
   title: () =>
@@ -81,6 +105,59 @@ useSeoMeta({ robots: () => (data.value?.rule.status === 'unknown' ? 'noindex' : 
           </p>
         </div>
       </div>
+      <section
+        v-if="data.notes.length || officialLink || typical.length"
+        class="mt-8 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8"
+        aria-labelledby="requirements-heading"
+      >
+        <h2 id="requirements-heading" class="text-xl font-semibold tracking-tight">{{ requirementsHeading }}</h2>
+        <p class="mt-2 text-sm leading-7 text-stone-500">
+          For {{ passportName }} passport holders visiting {{ destinationInText }}.
+        </p>
+        <template v-if="officialLink">
+          <a
+            :href="officialLink.url"
+            class="group mt-6 flex items-center justify-between gap-4 rounded-xl border border-emerald-800/15 bg-emerald-50/60 px-5 py-4 transition-colors hover:border-emerald-800/40 motion-reduce:transition-none"
+          >
+            <span class="min-w-0">
+              <span class="block text-[10px] font-semibold tracking-[0.14em] text-emerald-800 uppercase">{{
+                officialLink.label
+              }}</span>
+              <span class="mt-1 block text-base font-medium break-words">{{ siteHost(officialLink.url) }}</span>
+            </span>
+            <AppIcon
+              name="diagonal"
+              :size="18"
+              class="text-emerald-800 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transform-none"
+            />
+          </a>
+          <p class="mt-2 text-xs leading-6 text-stone-500">
+            The official site for visitors to {{ destinationInText }}. Agency sites with similar names charge extra
+            fees.
+          </p>
+        </template>
+        <ul v-if="data.notes.length" class="mt-6 space-y-3">
+          <li v-for="note in data.notes" :key="note" class="flex gap-3 text-sm leading-7 text-stone-700">
+            <span class="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600" aria-hidden="true" />{{ note }}
+          </li>
+        </ul>
+        <template v-if="typical.length">
+          <h3 class="mt-8 text-sm font-semibold">What you’ll usually need</h3>
+          <ul class="mt-3 space-y-2">
+            <li v-for="item in typical" :key="item" class="flex gap-3 text-sm leading-7 text-stone-700">
+              <AppIcon name="check" :size="16" class="mt-1.5 text-stone-400" />{{ item }}
+            </li>
+          </ul>
+          <p class="mt-3 text-xs leading-6 text-stone-500">
+            Typical for this kind of {{ data.rule.status === 'eta' ? 'approval' : 'visa' }}, not specific to
+            {{ destinationInText }}. The official site or an embassy has the exact list.
+          </p>
+        </template>
+        <p class="mt-6 border-t border-stone-100 pt-5 text-xs leading-6 text-stone-500">
+          Requirements change, and some depend on where you live, the visas you already hold or your route. Confirm them
+          with the official site or an embassy before you travel.
+        </p>
+      </section>
       <section class="mt-8 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6" aria-labelledby="check-heading">
         <h2 id="check-heading" class="mb-4 text-sm font-semibold">Check another trip</h2>
         <VisaChecker

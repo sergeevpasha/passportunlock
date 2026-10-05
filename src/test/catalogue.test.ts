@@ -9,7 +9,7 @@ import {
   scoreOf,
 } from '#shared/catalogue';
 import { comparisonCsv } from '~/utils/export-comparison';
-import wikipedia from '../server/data/2026-09-28.json';
+import wikipedia from '../server/data/2026-10-05.json';
 import { destinationCountsFor, parseMatrix, ruleFor } from '#shared/passports';
 
 describe('passport catalogue', () => {

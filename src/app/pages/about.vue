@@ -133,17 +133,35 @@ const covers = computed(() =>
       </p>
     </section>
     <section class="mt-5 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
+      <h2 class="text-xl font-semibold tracking-tight">Visa requirements and official sites</h2>
+      <p class="mt-3 text-sm leading-7 text-stone-500">
+        A passport’s page for a destination lists the requirements and conditions recorded for that rule: where the visa
+        is issued, fees, the airports an eVisa holder must arrive at, and exemptions such as entry with a valid US or
+        Schengen visa. They come from the same sources as the rules and are updated with them. Not every rule has them,
+        so every page for a trip that needs a visa or an eTA also lists what that kind of visa usually needs. That list
+        is the same for every destination.
+      </p>
+      <p class="mt-3 text-sm leading-7 text-stone-500">
+        A destination’s visa or eTA site is linked only when it is on that government’s own web domain, such as gov.bh
+        or go.kr, and when the rules of at least five passports with the same entry type cite it, so a passport that
+        needs an embassy visa isn’t sent to an eVisa site it can’t use. Where a rule has no such site, the page links
+        the destination’s own page about visas, picked by hand from its foreign ministry, immigration service or
+        official visa portal. Each update checks that these sites still exist. Agency sites are never linked.
+      </p>
+    </section>
+    <section class="mt-5 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
       <h2 class="text-xl font-semibold tracking-tight">How updates are handled</h2>
       <p class="mt-3 text-sm leading-7 text-stone-500">
         Each update is checked before it goes live. It is held back for review when a passport’s rules are missing or
-        incomplete, when more than 2% of rules are missing, or when more than 5% of rules change at once. An accepted
-        update replaces the data in one step, and the previous version is kept.
+        incomplete, when more than 2% of rules are missing, when more than 5% of rules change at once, or when the
+        requirement notes can’t be read. An accepted update replaces the data in one step, and the previous version is
+        kept.
       </p>
     </section>
     <section id="credits" class="mt-5 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
       <h2 class="text-xl font-semibold tracking-tight">Credits</h2>
       <p class="mt-3 text-sm leading-7 text-stone-500">
-        Visa rules are adapted from the
+        Visa rules and their requirement notes are adapted from the
         <a
           href="https://en.wikipedia.org/wiki/Category:Visa_requirements_by_nationality"
           class="text-emerald-800 underline underline-offset-4"

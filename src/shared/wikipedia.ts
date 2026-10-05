@@ -18,12 +18,21 @@ interface Cell {
   content: string;
 }
 
-/** Comments and citations are never part of a rule, and citations often contain table syntax of their own. */
-export function stripNoise(wikitext: string) {
+/** Comments and citations are never part of a rule, and citations often contain table syntax of their own. With
+ * `keepLinks`, a citation leaves the addresses it cites behind in a {{cited|…}} marker, which reads as nothing. */
+export function stripNoise(wikitext: string, { keepLinks = false } = {}) {
   return wikitext
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/<ref\b[^>]*\/>/gi, '')
-    .replace(/<ref\b[^>]*>[\s\S]*?<\/ref\s*>/gi, '');
+    .replace(/<ref\b[^>]*>[\s\S]*?<\/ref\s*>/gi, citation => {
+      const urls = keepLinks ? [...new Set(citation.match(/https?:\/\/[^\s|\]}{<>"]+/g))] : [];
+      return urls.length ? `{{cited|${urls.join(' ')}}}` : '';
+    });
+}
+
+/** The addresses that the citations in a cell cite, from the markers `stripNoise` leaves with `keepLinks`. */
+export function citedLinks(wikitext: string) {
+  return [...wikitext.matchAll(/\{\{cited\|([^{}]*)\}\}/g)].flatMap(match => match[1]!.split(' '));
 }
 
 /** Top-level {| … |} tables; tables nested inside a cell are dropped. */
@@ -276,6 +285,101 @@ export function notesRequireAuthorisation(notes: string) {
     .some(sentence => scheme.test(sentence) && mandatory.test(sentence) && !waived.test(sentence));
 }
 
+/** Notes that apply to many passports live in one shared page, in sections such as "Algeria. VOA", and rows pull a
+ * section in with {{#section-h::Template:Transcluded sections for the visa articles|Algeria. VOA}}. */
+export const sharedNotesTitle = 'Template:Transcluded sections for the visa articles';
+const sharedNote =
+  /\{\{\s*#section-h\s*:\s*:?\s*Template\s*:\s*Transcluded[ _]sections[ _]for[ _]the[ _]visa[ _]articles\s*\|\s*([^{}|]+?)\s*\}\}/gi;
+const sectionKey = (name: string) =>
+  name
+    .replace(/[\s_]+/g, ' ')
+    .trim()
+    .toLowerCase();
+
+/** The shared page's sections by heading. As when the page is transcluded, a section runs to the next heading of the
+ * same or a higher level. */
+export function sharedNoteSections(wikitext: string) {
+  const sections = new Map<string, string>();
+  const open: { key: string; level: number; lines: string[] }[] = [];
+  for (const line of stripNoise(wikitext).split('\n')) {
+    const heading = line.match(/^(={2,6})\s*(.+?)\s*\1\s*$/);
+    if (heading) {
+      const level = heading[1]!.length;
+      while (open.at(-1) && open.at(-1)!.level >= level) {
+        const section = open.pop()!;
+        sections.set(section.key, section.lines.join('\n'));
+      }
+      // A subheading reads as a line of its own in the sections around it.
+      for (const section of open) section.lines.push(`* ${heading[2]}`);
+      open.push({ key: sectionKey(heading[2]!), level, lines: [] });
+    } else for (const section of open) section.lines.push(line);
+  }
+  for (const section of open) sections.set(section.key, section.lines.join('\n'));
+  return sections;
+}
+
+const footnote = /\{\{\s*(?:refn|efn|efn-[a-z]+|notetag|sfn|r)\s*[|}]/i;
+
+/** Footnotes are citations too, and they can nest templates and run over several lines, so they go before the text is
+ * split into lines. Unclosed markup removes the rest of the text. */
+function withoutFootnotes(wikitext: string) {
+  let text = wikitext;
+  for (let match = text.match(footnote); match; match = text.match(footnote)) {
+    let depth = 0;
+    let end = match.index!;
+    while (end < text.length) {
+      if (text.startsWith('{{', end)) depth++;
+      else if (text.startsWith('}}', end)) depth--;
+      else {
+        end++;
+        continue;
+      }
+      end += 2;
+      if (!depth) break;
+    }
+    text = `${text.slice(0, match.index)} ${text.slice(end)}`;
+  }
+  return text;
+}
+
+const stayOnly = /^(?:up to )?\d{1,4}\s*-?\s*(?:day|week|month|year)s?\.?$/i;
+
+/** A notes cell as the separate points a reader sees, one per bullet or paragraph, in plain text. A stay length on its
+ * own is left out: it is already the rule's stay. */
+export function noteItems(wikitext: string, sections: Map<string, string> = new Map()) {
+  const text = withoutFootnotes(
+    wikitext.replace(sharedNote, (_, name: string) => `\n${sections.get(sectionKey(name)) ?? ''}\n`)
+  )
+    // Struck-out text is out of date.
+    .replace(/<(s|del|strike)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, ' ')
+    .replace(/\[\[\s*(?:File|Image)\s*:[^[\]]*(?:\[\[[^\]]*\]\][^[\]]*)*\]\]/gi, ' ')
+    .replace(/\{\{\s*(?:flag|flagcountry|flagu|flag country)\s*\|\s*([^|{}]+)[^{}]*\}\}/gi, '$1')
+    .replace(/\{\{\s*flagicon\b[^{}]*\}\}/gi, ' ');
+  const items = `\n${text}`
+    .split(/\n[ \t]*[*#:;]+|\n[ \t]*\n|<br\s*\/?>/i)
+    .map(item =>
+      visibleText(item)
+        .replace(/^[\s*#:;•·–—-]+/, '')
+        // Removed footnotes leave a space before the punctuation that followed them.
+        .replace(/\s+([,.;:!?)])/g, '$1')
+        .trim()
+    )
+    .filter(item => /[\p{L}\p{N}]/u.test(item) && !stayOnly.test(item));
+  return [...new Set(items)];
+}
+
+/** Shared notes an article includes that the shared page no longer has, so those rows lose them. */
+export function missingSharedNotes(wikitext: string, sections: Map<string, string>) {
+  return [...stripNoise(wikitext).matchAll(sharedNote)]
+    .map(match => match[1]!.trim())
+    .filter(name => !sections.has(sectionKey(name)));
+}
+
+/** Markup left in a note means the cell could not be read. */
+export function unreadableNote(note: string) {
+  return /\{\{|\}\}|\[\[|\]\]|<\/?[a-z!]/i.test(note);
+}
+
 const units: Record<string, number> = { day: 1, week: 7, month: 30, year: 365 };
 
 /** The first stay length mentioned, in days: "3 months" is 90, "6 weeks" 42. */
@@ -363,20 +467,35 @@ export function nameIndex(codes: string[]) {
 
 export interface PageRules {
   rules: Record<string, EntryRule>;
+  /** The notes on each rule: conditions, exemptions, where the visa is issued. Only destinations with notes. */
+  notes: Record<string, string[]>;
+  /** The addresses each rule's requirement cell cites. Only destinations whose cell cites any. */
+  cited: Record<string, string[]>;
   /** Destination names that are not in the dataset, such as dependent territories. */
   unknown: string[];
   /** Status cells that could not be read, as "CODE: text". */
   unreadable: string[];
+  /** Notes left out because markup remained in them, as "CODE: text". */
+  unreadableNotes: string[];
 }
 
 const staysListed = new Set<RequirementType>(['visa free', 'visa on arrival', 'eta', 'e-visa']);
 
-/** Entry rules for one passport; the first row for a destination wins when an article lists it twice. */
-export function parseVisaPage(wikitext: string, passport: string, index: Map<string, string>): PageRules {
+/** Entry rules for one passport; the first row for a destination wins when an article lists it twice. `sections` are
+ * the shared notes some rows include, from `sharedNoteSections`. */
+export function parseVisaPage(
+  wikitext: string,
+  passport: string,
+  index: Map<string, string>,
+  sections: Map<string, string> = new Map()
+): PageRules {
   const rules: Record<string, EntryRule> = {};
+  const notesByCode: Record<string, string[]> = {};
+  const cited: Record<string, string[]> = {};
   const unknown = new Set<string>();
   const unreadable: string[] = [];
-  const text = stripNoise(wikitext);
+  const unreadableNotes: string[] = [];
+  const text = stripNoise(wikitext, { keepLinks: true });
   for (const table of wikiTables(text)) {
     const grid = tableGrid(table);
     const header = grid.find(row => row.length > 1 && row.every(cell => cell?.header));
@@ -423,6 +542,14 @@ export function parseVisaPage(wikitext: string, passport: string, index: Map<str
         days = stayDays(visibleText(requirement.content)) ?? (noted ? stayDays(noted) : undefined);
       }
       rules[code] = days ? { status, days } : { status };
+      const noteCell = notes && notes !== requirement ? notes.content : '';
+      const items = noteItems(noteCell, sections);
+      const readable = items.filter(note => !unreadableNote(note));
+      unreadableNotes.push(...items.filter(unreadableNote).map(note => `${code}: ${note}`));
+      if (readable.length) notesByCode[code] = readable;
+      // Only the rule's own citations: notes cite pages about the exceptions they describe.
+      const links = [...new Set(citedLinks(requirement.content))];
+      if (links.length) cited[code] = links;
     }
   }
   // Some articles list territories as bullets instead: "* {{flag|Kosovo}} — Visa free for 90 days." Only a bullet
@@ -437,5 +564,5 @@ export function parseVisaPage(wikitext: string, passport: string, index: Map<str
     const days = staysListed.has(status) ? stayDays(sentence) : undefined;
     rules[code] = days ? { status, days } : { status };
   }
-  return { rules, unknown: [...unknown].sort(), unreadable };
+  return { rules, notes: notesByCode, cited, unknown: [...unknown].sort(), unreadable, unreadableNotes };
 }

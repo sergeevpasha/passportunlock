@@ -1,7 +1,8 @@
 import { readFile, stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import wikipedia from '../data/2026-09-28.json';
+import wikipedia from '../data/2026-10-05.json';
 import { parseMatrix, type Snapshot } from '#shared/passports';
+import { parseNotes, parseOfficialSites, parseVisaPages } from '#shared/requirements';
 import { wikipediaSource } from '#shared/wikipedia';
 
 // The committed baseline. The sync script can publish a newer snapshot at runtime, which then leads the list.
@@ -28,6 +29,9 @@ async function publishedSnapshot(): Promise<Snapshot | undefined> {
       throw new Error('Invalid snapshot metadata');
     }
     candidate.matrix = parseMatrix(candidate.matrix, codes, { complete: false });
+    if (candidate.notes) candidate.notes = parseNotes(candidate.notes, codes);
+    if (candidate.officialSites) candidate.officialSites = parseOfficialSites(candidate.officialSites, codes);
+    if (candidate.visaPages) candidate.visaPages = parseVisaPages(candidate.visaPages, codes);
     published = { modified, snapshot: candidate };
   }
   return published.snapshot;

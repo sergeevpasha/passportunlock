@@ -3,6 +3,8 @@ import { matchesCountry } from '#shared/catalogue';
 import { allCountries, countryNameInText } from '#shared/countries';
 import { countryFromSegment, destinationPath, entryPath } from '#shared/country-paths';
 import { entryLabels, requirementTypes, type EntryRule } from '#shared/passports';
+import { approvalKinds } from '#shared/requirements';
+import { entryShortLabels, siteHost, sitePage } from '~/utils/entry';
 
 const route = useRoute();
 const country = countryFromSegment(route.params.destination);
@@ -26,6 +28,24 @@ usePageSeo({
     ].flatMap(([count, text]) => (count ? [`${count} ${text}`] : []));
     return `How holders of each of the ${destination.total} other passports can enter ${nameInText.value}: ${new Intl.ListFormat('en').format(parts)}.`;
   },
+});
+
+// The destination's page about visas and its site for each entry type that needs one, once per page.
+const officialSites = computed(() => {
+  const sites = new Map<string, { url: string; labels: string[] }>();
+  const links: [string | undefined, string][] = [
+    [data.value?.visaPage ?? undefined, 'Visa information'],
+    ...approvalKinds.map(
+      kind => [data.value?.officialSites[kind]?.url, entryShortLabels[kind]] as [string | undefined, string]
+    ),
+  ];
+  for (const [url, label] of links) {
+    if (!url) continue;
+    const site = sites.get(sitePage(url)) ?? { url, labels: [] };
+    site.labels.push(label);
+    sites.set(sitePage(url), site);
+  }
+  return [...sites.values()].map(({ url, labels }) => ({ url, label: labels.join(' · ') }));
 });
 
 const search = ref('');
@@ -128,6 +148,29 @@ function clearFilters() {
           </p>
         </div>
       </div>
+      <section
+        v-if="officialSites.length"
+        class="mt-5 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6"
+        aria-labelledby="official-heading"
+      >
+        <h2 id="official-heading" class="text-sm font-semibold">Official sites</h2>
+        <ul class="mt-4 flex flex-wrap gap-3">
+          <li v-for="site in officialSites" :key="site.url" class="max-w-full">
+            <a
+              :href="site.url"
+              class="group flex items-center gap-3 rounded-xl border border-emerald-800/15 bg-emerald-50/60 px-4 py-2.5 transition-colors hover:border-emerald-800/40 motion-reduce:transition-none"
+              ><span class="text-[10px] font-semibold tracking-[0.14em] text-emerald-800 uppercase">{{
+                site.label
+              }}</span
+              ><span class="min-w-0 text-sm font-medium break-words">{{ siteHost(site.url) }}</span
+              ><AppIcon name="diagonal" :size="16" class="text-emerald-800"
+            /></a>
+          </li>
+        </ul>
+        <p class="mt-3 text-xs leading-6 text-stone-500">
+          The official sites for visitors to {{ nameInText }}. Agency sites with similar names charge extra fees.
+        </p>
+      </section>
       <section class="mt-5 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6" aria-labelledby="check-heading">
         <h2 id="check-heading" class="mb-4 text-sm font-semibold">Check a passport</h2>
         <VisaChecker :destination="{ code: country.code, name }" />

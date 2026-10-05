@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { entryAnswer } from '~/utils/entry';
+import { approvalKinds } from '#shared/requirements';
+import { entryAnswer, typicalRequirements } from '~/utils/entry';
 
 describe('entry answers', () => {
   it('answers in plain words, with the stay only where the rule gives one', () => {
@@ -21,5 +22,9 @@ describe('entry answers', () => {
     );
     expect(entryAnswer({ status: 'visa required' }, 'India', 'Canada').title).toBe('Visa needed');
     expect(entryAnswer({ status: 'unknown' }, 'Kosovo', 'Palestine').title).toBe('Not confirmed');
+  });
+  it('lists what is usually needed for every entry type that needs an approval, and only those', () => {
+    for (const kind of approvalKinds) expect(typicalRequirements[kind]?.length).toBeGreaterThan(2);
+    expect(Object.keys(typicalRequirements).sort()).toEqual([...approvalKinds].sort());
   });
 });

@@ -12,8 +12,9 @@ import {
   type EntryRule,
 } from '#shared/passports';
 import { countryRegion } from '#shared/countries';
-import wikipedia from '../server/data/2026-09-28.json';
-import { coverageIssues, publicationIssues } from '#shared/sync-policy';
+import { notesFor, parseNotes, parseOfficialSites } from '#shared/requirements';
+import wikipedia from '../server/data/2026-10-05.json';
+import { coverageIssues, noteIssues, publicationIssues } from '#shared/sync-policy';
 import { wikipediaPages } from '#shared/wikipedia-pages';
 
 const codes = Object.keys(wikipediaPages);
@@ -31,6 +32,20 @@ describe('passport data integrity', () => {
     const listed = Object.values(matrix).flatMap(Object.keys).length;
     expect(listed).toBeLessThan(39402);
     expect(listed / 39402).toBeGreaterThan(0.98);
+  });
+  it('ships plain-text notes for listed rules and official sites on government domains', () => {
+    const notes = parseNotes(wikipedia.notes, codes);
+    const noted = Object.entries(notes.rules).flatMap(([passport, destinations]) =>
+      Object.keys(destinations).map(destination => [passport, destination] as const)
+    );
+    expect(noted.length).toBeGreaterThan(10_000);
+    // Notes belong to rules the snapshot lists.
+    for (const [passport, destination] of noted) expect(wikipedia.matrix).toHaveProperty([passport, destination]);
+    expect(notesFor(notes, 'IN', 'MX').join(' ')).toMatch(/visa/i);
+    expect(wikipedia.sharedNotes?.title).toBe('Template:Transcluded sections for the visa articles');
+    const sites = parseOfficialSites(wikipedia.officialSites, codes);
+    expect(Object.keys(sites).length).toBeGreaterThan(50);
+    expect(sites.US?.eta?.url).toMatch(/^https:\/\/esta\.cbp\.dhs\.gov\/?$/);
   });
   it('rejects malformed and unrecognized data, and allows gaps only when asked', () => {
     const partial = { NZ: { RU: { status: 'visa free' } }, RU: {} };
@@ -127,6 +142,13 @@ describe('passport data integrity', () => {
       );
     }
     expect(comparisonStats(rows, passports)).toEqual({ shared: 2, combined: 3, additional: 1, differences: 4 });
+  });
+  it('holds back snapshots whose notes are missing or unreadable', () => {
+    expect(noteIssues({ sharedNotesFound: true, unreadable: 4, total: 21530 })).toEqual([]);
+    expect(noteIssues({ sharedNotesFound: false, unreadable: 300, total: 21530 })).toEqual([
+      'Shared notes not found',
+      'More than 1% of notes are unreadable',
+    ]);
   });
   it('holds back Wikipedia snapshots with missing or thin articles or too many missing rules', () => {
     expect(coverageIssues({ missingPages: [], thinPages: [], missingCells: 84, total: 39402 })).toEqual([]);

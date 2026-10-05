@@ -13,6 +13,9 @@ export default defineEventHandler(async event => {
     destination,
     destinations: Object.keys(latest.matrix).length,
     counts: destinationCountsFor(latest.matrix, code),
+    // The government's own sites for its visa and its eTA, where known.
+    officialSites: latest.officialSites?.[code] ?? {},
+    visaPage: latest.visaPages?.[code] ?? null,
     passports: Object.keys(latest.matrix)
       .filter(passport => passport !== code)
       .map(passport => ({ ...countrySummary(passport), rule: ruleFor(latest.matrix, passport, code) }))

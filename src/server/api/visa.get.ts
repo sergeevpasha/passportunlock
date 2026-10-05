@@ -1,6 +1,7 @@
 import { destinationCatalogue, passportCatalogue } from '#shared/catalogue';
 import { countryName, countryRegion } from '#shared/countries';
 import { ruleFor } from '#shared/passports';
+import { approvalKind, notesFor } from '#shared/requirements';
 import { passportSnapshots } from '../utils/passport-data';
 
 // One passport's rule for one destination, with the context its page shows.
@@ -16,10 +17,17 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 400, statusMessage: 'Choose a supported passport and another destination.' });
   }
   const region = countryRegion(destination.code);
+  const rule = ruleFor(latest.matrix, passport.code, destination.code);
+  const kind = approvalKind(rule.status);
   return {
     passport,
     destination,
-    rule: ruleFor(latest.matrix, passport.code, destination.code),
+    rule,
+    // Conditions, exemptions and where the visa is issued, and the destination government's site for the approval.
+    notes: notesFor(latest.notes, passport.code, destination.code),
+    officialSite: (kind && latest.officialSites?.[destination.code]?.[kind]) || null,
+    // The destination's own page about visas, for a rule that needs an approval but has no site of its own.
+    visaPage: (kind && latest.visaPages?.[destination.code]) || null,
     // The destination's own passport, visiting the passport's country.
     reverse: ruleFor(latest.matrix, destination.code, passport.code),
     region,

@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { countryRegion } from '#shared/countries';
 import {
+  citedLinks,
+  missingSharedNotes,
   nameIndex,
   normalizeName,
+  noteItems,
   notesRequireAuthorisation,
   parseVisaPage,
   requirementStatus,
+  sharedNoteSections,
   stayDays,
+  stripNoise,
   visibleText,
 } from '#shared/wikipedia';
 import { wikipediaPages } from '#shared/wikipedia-pages';
@@ -149,6 +154,71 @@ describe('Wikipedia visa articles', () => {
     });
     expect(unknown).toEqual(['Guam']);
     expect(unreadable).toEqual([]);
+  });
+
+  it('keeps the notes on each rule and the addresses its requirement cell cites', () => {
+    const { notes, cited, unreadableNotes } = parseVisaPage(article, 'NZ', index);
+    expect(notes).toEqual({
+      AF: ['e-Visa: visitors must arrive at Kabul.'],
+      GB: [
+        'Electronic Travel Authorisation must be obtained via the UK ETA app before travel for all visa exempt countries.',
+      ],
+      CA: ['An eTA will be required from 2030.'],
+      // Macau's note is only its stay, which the rule already has.
+      PS: ['Passport valid for 6 months; entry is through Israel.'],
+    });
+    expect(cited).toEqual({ AF: ['https://visaportal.example'] });
+    expect(unreadableNotes).toEqual([]);
+  });
+
+  it('includes the shared notes a row asks for', () => {
+    const shared = sharedNoteSections(`Intro.
+== Laos. Visa on arrival ==
+* Available at Vientiane airport.<ref>{{cite web|url=https://example.org}}</ref>
+=== Land borders ===
+* Most crossings.
+== Kenya. eTA ==
+* eTA fee is USD 32.50.`);
+    expect([...shared.keys()]).toEqual(['land borders', 'laos. visa on arrival', 'kenya. eta']);
+    expect(
+      noteItems(
+        '* Check the dates.\n{{#section-h::Template:Transcluded sections for the visa articles|Laos. Visa on arrival}}',
+        shared
+      )
+    ).toEqual(['Check the dates.', 'Available at Vientiane airport.', 'Land borders', 'Most crossings.']);
+    const row = '{{#section-h:Template:Transcluded_sections_for_the_visa_articles| Kenya. eTA }}';
+    expect(noteItems(row, shared)).toEqual(['eTA fee is USD 32.50.']);
+    expect(
+      missingSharedNotes(`${row}\n{{#section-h::Template:Transcluded sections for the visa articles|Gone}}`, shared)
+    ).toEqual(['Gone']);
+  });
+
+  it('reads a notes cell as plain points', () => {
+    const cell = `
+* Visa on arrival for holders of a {{flag|United States}} visa.{{Citation needed|date=May 2026}}
+* <s>Visa not required until 2024.</s> Visa required.
+Fee: USD 50.<br>Must arrive at [[Kotoka International Airport|Kotoka airport]].{{efn|Or by sea at
+* Tema.}}
+[[File:Stamp.jpg|thumb|An [[entry stamp]]]]
+* 90 days
+* Must arrive at [[Kotoka International Airport|Kotoka airport]].
+* Open at 3 bridges{{efn|name=Bridges|Friendship Bridges}} , and in Boten.
+
+A second paragraph.`;
+    expect(noteItems(cell)).toEqual([
+      'Visa on arrival for holders of a United States visa.',
+      'Visa required. Fee: USD 50.',
+      'Must arrive at Kotoka airport.',
+      'Open at 3 bridges, and in Boten.',
+      'A second paragraph.',
+    ]);
+  });
+
+  it('leaves the cited addresses behind only when asked', () => {
+    const cell = '{{yes2|eVisa}}<ref>{{cite web|url=https://evisa.gov.example/apply|title=eVisa}}</ref><ref name=x/>';
+    expect(stripNoise(cell)).toBe('{{yes2|eVisa}}');
+    expect(citedLinks(stripNoise(cell, { keepLinks: true }))).toEqual(['https://evisa.gov.example/apply']);
+    expect(requirementStatus(stripNoise(cell, { keepLinks: true }))).toBe('e-visa');
   });
 
   it('reads destinations an article lists as bullets instead of table rows', () => {

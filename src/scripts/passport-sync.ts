@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { Resolver } from 'node:dns/promises';
 import * as filesystem from 'node:fs/promises';
 import { resolve } from 'node:path';
 import {
@@ -9,8 +10,23 @@ import {
   type SnapshotPage,
   type VisaMatrix,
 } from '../shared/passports.ts';
-import { coverageIssues, publicationIssues } from '../shared/sync-policy.ts';
-import { nameIndex, parseVisaPage, wikipediaSource } from '../shared/wikipedia.ts';
+import {
+  approvalKinds,
+  indexNotes,
+  officialSiteCandidates,
+  type OfficialSite,
+  type OfficialSites,
+} from '../shared/requirements.ts';
+import { coverageIssues, noteIssues, publicationIssues } from '../shared/sync-policy.ts';
+import {
+  missingSharedNotes,
+  nameIndex,
+  parseVisaPage,
+  sharedNoteSections,
+  sharedNotesTitle,
+  wikipediaSource,
+} from '../shared/wikipedia.ts';
+import { visaPages as chosenVisaPages } from '../shared/visa-pages.ts';
 import { wikipediaPages } from '../shared/wikipedia-pages.ts';
 
 interface SyncOptions {
@@ -20,6 +36,8 @@ interface SyncOptions {
   contact?: string;
   directory?: string;
   baselineDirectory?: string;
+  /** Each destination's official visa information page; `visaPages` from shared/visa-pages.ts by default. */
+  visaPages?: Record<string, string>;
 }
 
 interface SyncDependencies {
@@ -28,11 +46,25 @@ interface SyncDependencies {
   pause?: (seconds: number) => Promise<void>;
   storage?: Pick<typeof filesystem, 'mkdir' | 'open' | 'readdir' | 'readFile' | 'rename' | 'unlink' | 'writeFile'>;
   log?: (message: string) => void;
+  /** Whether a host name exists, asked of public resolvers: false when it doesn't, undefined when they don't answer. */
+  resolves?: (host: string) => Promise<boolean | undefined>;
+}
+
+/** Asks public resolvers directly, since the resolver inside Docker Desktop fails now and then for names that exist. */
+async function publicLookup(host: string) {
+  const resolver = new Resolver({ timeout: 5000, tries: 2 });
+  resolver.setServers(['1.1.1.1', '8.8.8.8']);
+  const answers = await Promise.allSettled([resolver.resolve4(host), resolver.resolve6(host)]);
+  if (answers.some(answer => answer.status === 'fulfilled')) return true;
+  const codes = answers.map(answer => (answer as PromiseRejectedResult).reason?.code);
+  return codes.every(code => code === 'ENOTFOUND' || code === 'ENODATA') && codes.includes('ENOTFOUND')
+    ? false
+    : undefined;
 }
 
 /** Importing the workflow has no side effects. Only an explicit run takes a lock, fetches articles and writes files. */
 export async function runSync(options: SyncOptions = {}, dependencies: SyncDependencies = {}) {
-  const { publish = false, baseline = false, acceptLargeChange = false } = options;
+  const { publish = false, baseline = false, acceptLargeChange = false, visaPages = chosenVisaPages } = options;
   const directory = resolve(options.directory ?? '.data/passports');
   const baselineDirectory = resolve(options.baselineDirectory ?? 'server/data');
   const {
@@ -41,6 +73,7 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
     pause = (seconds: number) => new Promise<void>(done => setTimeout(done, seconds * 1000)),
     storage = filesystem,
     log = () => {},
+    resolves = publicLookup,
   } = dependencies;
   const { mkdir, open, readdir, readFile, rename, unlink, writeFile } = storage;
 
@@ -159,6 +192,95 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
 
   const describe = (rule: EntryRule) => `${rule.status}${rule.days ? ` ${rule.days}d` : ''}`;
 
+  // Certificate chains that leave out an intermediate certificate, which browsers fetch for themselves.
+  const incompleteChain = new Set(['UNABLE_TO_VERIFY_LEAF_SIGNATURE', 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY']);
+  // Certificates a browser warns about.
+  const refusedCertificate = new Set([
+    'CERT_HAS_EXPIRED',
+    'DEPTH_ZERO_SELF_SIGNED_CERT',
+    'SELF_SIGNED_CERT_IN_CHAIN',
+    'ERR_TLS_CERT_ALTNAME_INVALID',
+  ]);
+
+  /** Whether an address still leads to a page, following redirects as a browser would. Only the site can show it is
+   * gone: a missing page (404, 410) at the end of its redirects, a certificate a browser would refuse, or a name that
+   * public resolvers say doesn't exist. Anything else may depend on the moment or on where the check runs from, so it
+   * leaves the site unverified. A redirect loop needs the cookies a browser keeps, and a certificate chain missing an
+   * intermediate is one browsers complete, so both count as answers. */
+  async function checkSite(url: string): Promise<{ result: 'answers' | 'gone' | 'unverified'; detail: string }> {
+    try {
+      const response = await request(url, {
+        signal: AbortSignal.timeout(20_000),
+        headers: { 'User-Agent': userAgent },
+      });
+      await response.body?.cancel();
+      const detail = `HTTP ${response.status}${response.redirected ? ` at ${response.url}` : ''}`;
+      if (response.status === 404 || response.status === 410) return { result: 'gone', detail };
+      return { result: response.status < 500 ? 'answers' : 'unverified', detail };
+    } catch (error) {
+      const { cause, name, message } = error as Error & { cause?: { code?: string; message?: string } };
+      const detail = cause?.code ?? (name === 'TimeoutError' ? 'no answer in 20 s' : (cause?.message ?? message));
+      if (incompleteChain.has(detail) || /redirect count exceeded/i.test(detail)) return { result: 'answers', detail };
+      if (refusedCertificate.has(detail)) return { result: 'gone', detail };
+      if (detail === 'ENOTFOUND' || detail === 'EAI_AGAIN') {
+        const exists = await resolves(new URL(url).hostname);
+        if (exists === false) return { result: 'gone', detail: 'no such host name' };
+      }
+      return { result: 'unverified', detail };
+    }
+  }
+
+  /** For each destination and approval, the first candidate address that answers, trying https before http. When none
+   * answers but one couldn't be verified, that one stays and the report lists it. */
+  async function officialSites(candidates: ReturnType<typeof officialSiteCandidates>) {
+    const sites: OfficialSites = {};
+    const unverified: string[] = [];
+    const gone: string[] = [];
+    const checks = Object.entries(candidates).flatMap(([destination, kinds]) =>
+      approvalKinds.flatMap(kind => (kinds[kind] ? [{ destination, kind, hosts: kinds[kind] }] : []))
+    );
+    async function check({ destination, kind, hosts }: (typeof checks)[number]) {
+      const tried: string[] = [];
+      let fallback: OfficialSite | undefined;
+      for (const { citations, urls } of hosts.slice(0, 3)) {
+        const tries = [...new Set(urls.flatMap(url => [url.replace(/^http:/, 'https:'), url]))];
+        for (const url of tries) {
+          const { result, detail } = await checkSite(url);
+          if (result === 'answers') {
+            (sites[destination] ??= {})[kind] = { url, citations };
+            return;
+          }
+          tried.push(`${url} (${detail})`);
+          if (result === 'unverified') fallback ??= { url, citations };
+        }
+      }
+      if (fallback) (sites[destination] ??= {})[kind] = fallback;
+      (fallback ? unverified : gone).push(`${destination} ${kind}: ${tried.join(', ')}`);
+    }
+    // A few at a time: each try is one request to a government server.
+    for (let start = 0; start < checks.length; start += 4) await Promise.all(checks.slice(start, start + 4).map(check));
+    return { sites, unverified: unverified.sort(), gone: gone.sort() };
+  }
+
+  /** The chosen visa information pages that are still there. Like the cited sites, one that couldn't be verified
+   * stays and the report lists it. */
+  async function checkedVisaPages() {
+    const pages: Record<string, string> = {};
+    const unverified: string[] = [];
+    const gone: string[] = [];
+    const entries = Object.entries(visaPages).sort(([a], [b]) => a.localeCompare(b));
+    for (let start = 0; start < entries.length; start += 4) {
+      await Promise.all(
+        entries.slice(start, start + 4).map(async ([destination, url]) => {
+          const { result, detail } = await checkSite(url);
+          if (result !== 'gone') pages[destination] = url;
+          if (result !== 'answers') (result === 'gone' ? gone : unverified).push(`${destination}: ${url} (${detail})`);
+        })
+      );
+    }
+    return { pages, unverified: unverified.sort(), gone: gone.sort() };
+  }
+
   await mkdir(directory, { recursive: true });
   const lockPath = resolve(directory, 'sync.lock');
   const lock = await open(lockPath, 'wx');
@@ -166,7 +288,9 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
     const current = await servedSnapshot(directory);
     const codes = Object.keys(wikipediaPages).sort();
     const index = nameIndex(codes);
-    const articles = await fetchArticles(codes.map(code => wikipediaPages[code]!));
+    const articles = await fetchArticles([...codes.map(code => wikipediaPages[code]!), sharedNotesTitle]);
+    const shared = articles.get(sharedNotesTitle);
+    const sections = sharedNoteSections(shared?.text ?? '');
 
     const matrix: VisaMatrix = {};
     const pages: Record<string, SnapshotPage> = {};
@@ -175,9 +299,13 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
     const thinPages: string[] = [];
     const unreadable: string[] = [];
     const unknown = new Set<string>();
+    const notes: Record<string, Record<string, string[]>> = {};
+    const cited: Record<string, Record<string, string[]>> = {};
+    const unreadableNotes: string[] = [];
+    const missingNotes = new Set<string>();
     for (const code of codes) {
       const article = articles.get(wikipediaPages[code]!);
-      const parsed = article && parseVisaPage(article.text, code, index);
+      const parsed = article && parseVisaPage(article.text, code, index, sections);
       const found = parsed ? Object.keys(parsed.rules).length : 0;
       if (!article) missingPages.push(code);
       else if (found < minimumDestinations) thinPages.push(`${code} (${found})`);
@@ -185,6 +313,12 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
       if (article && rules) pages[code] = { title: article.title, revision: article.revision, edited: article.edited };
       unreadable.push(...(parsed?.unreadable ?? []).map(entry => `${code} → ${entry}`));
       parsed?.unknown.forEach(name => unknown.add(name));
+      if (article && parsed && rules) {
+        notes[code] = parsed.notes;
+        cited[code] = parsed.cited;
+        unreadableNotes.push(...parsed.unreadableNotes.map(entry => `${code} → ${entry}`));
+        if (shared) missingSharedNotes(article.text, sections).forEach(name => missingNotes.add(name));
+      }
       matrix[code] = {};
       for (const destination of codes) {
         if (destination === code) continue;
@@ -194,6 +328,9 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
       }
     }
     parseMatrix(matrix, codes, { complete: false });
+    const ruleNotes = indexNotes(notes);
+    const { sites, unverified, gone } = await officialSites(officialSiteCandidates(cited, matrix));
+    const visaInformation = await checkedVisaPages();
 
     const fetchedAt = now().toISOString();
     const sourceDate = fetchedAt.slice(0, 10);
@@ -205,15 +342,21 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
       fetchedAt,
       revision: createHash('sha256')
         .update(
-          Object.entries(pages)
+          [...Object.entries(pages), ...(shared ? [['shared', shared] as const] : [])]
             .map(([code, page]) => `${code}:${page.revision}`)
             .join('\n')
         )
         .digest('hex'),
-      sha256: createHash('sha256').update(JSON.stringify(matrix)).digest('hex'),
+      sha256: createHash('sha256')
+        .update(JSON.stringify({ matrix, notes: ruleNotes, officialSites: sites, visaPages: visaInformation.pages }))
+        .digest('hex'),
       license: wikipediaSource.license,
       pages,
+      ...(shared && { sharedNotes: { title: shared.title, revision: shared.revision, edited: shared.edited } }),
       matrix,
+      notes: ruleNotes,
+      officialSites: sites,
+      visaPages: visaInformation.pages,
     };
 
     const total = codes.length * (codes.length - 1);
@@ -221,11 +364,27 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
       change => `${change.passport} → ${change.destination}: ${describe(change.before)} → ${describe(change.after)}`
     );
     const missingCells = Object.values(missing).reduce((sum, list) => sum + list.length, 0);
+    const noteCount = Object.values(ruleNotes.rules)
+      .flatMap(destinations => Object.values(destinations))
+      .reduce((sum, list) => sum + list.length, 0);
+    const siteChanges = Object.keys({ ...current?.officialSites, ...sites })
+      .sort()
+      .flatMap(destination =>
+        approvalKinds.flatMap(kind => {
+          const [before, after] = [current?.officialSites?.[destination]?.[kind]?.url, sites[destination]?.[kind]?.url];
+          return before === after ? [] : [`${destination} ${kind}: ${before ?? 'none'} → ${after ?? 'none'}`];
+        })
+      );
     const issues = [
       ...publicationIssues(sourceDate, current?.sourceDate, changes.length, total, now()).filter(
         issue => !(acceptLargeChange && issue.startsWith('More than 5%'))
       ),
       ...coverageIssues({ missingPages, thinPages, missingCells, total }),
+      ...noteIssues({
+        sharedNotesFound: Boolean(shared),
+        unreadable: unreadableNotes.length,
+        total: noteCount + unreadableNotes.length,
+      }),
     ];
     const report = {
       checkedAt: fetchedAt,
@@ -241,6 +400,16 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
       missingCells,
       unreadable,
       unknownDestinations: unknown.size,
+      notes: { rules: Object.values(ruleNotes.rules).flatMap(Object.keys).length, notes: noteCount },
+      unreadableNotes,
+      missingSharedNotes: [...missingNotes].sort(),
+      officialSites: Object.values(sites).flatMap(Object.keys).length,
+      unverifiedSites: unverified,
+      droppedSites: gone,
+      officialSiteChanges: siteChanges,
+      visaPages: Object.keys(visaInformation.pages).length,
+      unverifiedVisaPages: visaInformation.unverified,
+      droppedVisaPages: visaInformation.gone,
       changed: changes.length,
       total,
       sampleChanges: changes.slice(0, 40),

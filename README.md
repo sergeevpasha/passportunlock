@@ -34,11 +34,11 @@ docker compose exec -T app yarn test
 docker compose exec -T app node scripts/sync-passports.ts --baseline
 ```
 
-Import the new file from `src/server/data/` in `src/server/utils/passport-data.ts`, then commit and push. Pushes to `master` deploy to Vercel.
+Before committing, read `src/.data/passports/last-check.json`: the rule changes, notes that couldn't be read, and official visa sites that changed, were dropped or couldn't be verified. Import the new file from `src/server/data/` in `src/server/utils/passport-data.ts`, then commit and push. Pushes to `master` deploy to Vercel.
 
 ## Credits
 
-- Visa rules: Wikipedia contributors, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- Visa rules and requirement notes: Wikipedia contributors, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 - Map: [D3 Maps Atlas](https://github.com/souljorje/d3-maps)
 - Flags: [flag-icons](https://github.com/lipis/flag-icons)
 - Passport covers: recreated from photographs and scans of each passport; the adapted Wikimedia Commons works are credited in `src/app/utils/cover-credits.ts` and on the About page
