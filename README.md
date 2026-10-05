@@ -9,7 +9,7 @@ Visa rules come from Wikipedia and can be out of date. Check with the embassy be
 ## Environment
 
 ```env
-DOCKER_NODEJS_PORT=3024
+DOCKER_NODEJS_PORT=3124
 WIKIMEDIA_CONTACT=
 ```
 
@@ -20,7 +20,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Open http://localhost:3024.
+Open http://localhost:3124.
 
 ```bash
 docker compose exec -T app yarn lint
