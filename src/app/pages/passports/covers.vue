@@ -76,9 +76,6 @@ function resetFilters() {
         </a>
       </li>
     </ul>
-    <p class="mt-10 text-xs leading-6 text-stone-500">
-      The covers are recreations of the real passports.
-      <NuxtLink to="/about#credits" class="text-emerald-800 underline underline-offset-4">Image credits.</NuxtLink>
-    </p>
+    <p class="mt-10 text-xs leading-6 text-stone-500">The covers are recreations of the real passports.</p>
   </div>
 </template>

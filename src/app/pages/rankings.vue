@@ -134,7 +134,6 @@ function resetFilters() {
     <p class="mt-5 max-w-3xl text-xs leading-6 text-stone-500">
       The visa-free ranking counts only destinations that need no visa or approval before travel. The mobility score
       also counts visas on arrival and eTAs, as broader passport indexes do; eVisas count in neither.
-      <NuxtLink to="/about" class="text-emerald-800 underline underline-offset-4">Read the methodology.</NuxtLink>
     </p>
   </div>
 </template>

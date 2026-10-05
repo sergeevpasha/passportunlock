@@ -134,7 +134,6 @@ function resetFilters() {
     <p class="mt-5 max-w-3xl text-xs leading-6 text-stone-500">
       A destination scores one point for each passport whose holders can visit without a visa. The mobility score also
       counts passports that can get a visa on arrival or enter with an eTA. Rules that aren’t confirmed don’t count.
-      <NuxtLink to="/about" class="text-emerald-800 underline underline-offset-4">Read the methodology.</NuxtLink>
     </p>
   </div>
 </template>

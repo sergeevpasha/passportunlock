@@ -38,7 +38,6 @@ export function sitemapFiles(matrix: VisaMatrix): { name: string; paths: string[
         '/destinations',
         '/compare',
         '/rankings',
-        '/about',
         ...codes.map(passportPath),
         ...codes.map(destinationPath),
       ],

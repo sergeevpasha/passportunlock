@@ -10,8 +10,5 @@ defineProps<{ date?: string }>();
         {{ dateLabel(date) }}</span
       ></span
     >
-    <NuxtLink to="/about" class="underline decoration-stone-300 underline-offset-4 hover:text-emerald-800"
-      >About the data</NuxtLink
-    >
   </div>
 </template>

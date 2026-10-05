@@ -41,4 +41,4 @@ Before committing, read `src/.data/passports/last-check.json`: the rule changes,
 - Visa rules and requirement notes: Wikipedia contributors, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 - Map: [D3 Maps Atlas](https://github.com/souljorje/d3-maps)
 - Flags: [flag-icons](https://github.com/lipis/flag-icons)
-- Passport covers: recreated from photographs and scans of each passport; the adapted Wikimedia Commons works are credited in `src/app/utils/cover-credits.ts` and on the About page
+- Passport covers: recreated from photographs and scans of each passport; the adapted Wikimedia Commons works are credited in `src/app/utils/cover-credits.ts`

@@ -214,7 +214,6 @@ function clearFilters() {
         >
         <p class="mt-5 text-xs leading-6 text-stone-500">
           An eTA or eVisa requires approval before travel. Missing stay durations do not mean unlimited entry.
-          <NuxtLink to="/about" class="text-emerald-800 underline underline-offset-4">How to read this data.</NuxtLink>
         </p>
       </section>
     </template>

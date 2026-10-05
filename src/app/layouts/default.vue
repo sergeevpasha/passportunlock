@@ -42,14 +42,6 @@ const inSection = (to: string) => to !== '/' && route.path.startsWith(`${to}/`);
             <AppIcon :name="item.icon" :size="16" class="hidden sm:block" />{{ item.label }}
           </NuxtLink>
         </nav>
-        <NuxtLink
-          to="/about"
-          aria-label="About the data"
-          class="flex items-center gap-1.5 text-xs text-stone-500 hover:text-emerald-800"
-          ><AppIcon name="info" :size="16" /><span class="hidden sm:inline lg:hidden xl:inline"
-            >About the data</span
-          ></NuxtLink
-        >
       </div>
     </header>
     <main id="main" tabindex="-1" class="mx-auto w-full max-w-[1320px] flex-1 px-5 py-10 sm:px-8 lg:px-12 lg:py-12">
@@ -60,10 +52,7 @@ const inSection = (to: string) => to !== '/' && route.path.startsWith(`${to}/`);
         class="mx-auto flex max-w-[1320px] flex-col justify-between gap-5 px-5 py-7 text-xs text-stone-500 sm:flex-row sm:items-center sm:px-8 lg:px-12"
       >
         <p>Entry rules change. Confirm them with the destination before you travel.</p>
-        <div class="flex shrink-0 gap-5">
-          <NuxtLink to="/about" class="hover:text-emerald-800">About the data</NuxtLink
-          ><NuxtLink to="/about#credits" class="hover:text-emerald-800">Credits</NuxtLink><span>Passport Unlock</span>
-        </div>
+        <span class="shrink-0">Passport Unlock</span>
       </div>
     </footer>
   </div>
