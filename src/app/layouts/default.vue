@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { iconPaths } from '~/utils/icons';
 const navigation = [
   { to: '/', label: 'Overview', icon: 'grid' },
   { to: '/passports', label: 'Passports', icon: 'passport' },
@@ -11,6 +12,8 @@ const route = useRoute();
 // A page inside a section, such as one destination, keeps the section highlighted. On narrow screens the Overview
 // link gives way to the others, as the logo also leads home.
 const inSection = (to: string) => to !== '/' && route.path.startsWith(`${to}/`);
+// Long lists repeat these icons on every row, so each row points at one copy instead of drawing its own.
+const listIcons = ['check', 'diagonal'] as const;
 </script>
 
 <template>
@@ -20,6 +23,21 @@ const inSection = (to: string) => to !== '/' && route.path.startsWith(`${to}/`);
     <a href="#main" class="fixed -top-20 left-4 z-50 rounded-lg bg-emerald-900 px-5 py-3 text-white focus:top-4"
       >Skip to content</a
     >
+    <svg width="0" height="0" class="absolute" aria-hidden="true">
+      <symbol
+        v-for="icon in listIcons"
+        :id="`icon-${icon}`"
+        :key="icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path :d="iconPaths[icon]" />
+      </symbol>
+    </svg>
     <header class="border-b border-stone-200/80 bg-[#f8f9f5]">
       <div
         class="mx-auto flex max-w-[1320px] flex-wrap items-center justify-between gap-5 px-5 pt-5 pb-3 sm:px-8 lg:h-22 lg:flex-nowrap lg:px-12 lg:py-0"

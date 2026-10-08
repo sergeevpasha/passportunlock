@@ -204,3 +204,35 @@ export function parseVisaPages(input: unknown, codes: string[]): Record<string, 
   }
   return input as Record<string, string>;
 }
+
+export type NoteLabel = 'Exception' | 'ID card' | 'Fee' | 'Health' | 'Where to enter' | 'Registration' | 'Stay';
+// The first that fits names a note on the page, so a reader can find the fee or the ID card rule at a glance.
+const noteLabels: [NoteLabel, RegExp][] = [
+  [
+    'Exception',
+    /\b(?:holders?|holding|those with|passengers with|travell?ers with)\b[^.]{0,80}\b(?:visas?|residen\w*|green cards?)\b|\bsubstitut|\bresiden\w* (?:permits?|cards?) (?:in|of|from|issued)\b/i,
+  ],
+  ['ID card', /\bID cards?\b|\bidentity cards?\b|\bnational identity\b/i],
+  ['Fee', /\bfees?\b|\b(?:USD|EUR|GBP|US\$|€|£)\s?\d|\d\s?(?:USD|EUR|GBP)\b|\$\s?\d/i],
+  [
+    'Health',
+    /\byellow fever\b|\bvaccinat|\bhealth (?:insurance|certificate|declaration)\b|\bmedical insurance\b|\bpolio\b/i,
+  ],
+  [
+    'Where to enter',
+    /\bonly (?:at|via|through|available at|be obtained at|issued at|if arriving (?:at|via))\b|\b(?:arrive|arriving|enter|entering|issued|available|obtained)\s+(?:only\s+)?(?:via|through|at)\b[^.]{0,80}\b(?:airports?|ports?|border|crossings?)\b|\bport of entry\b/i,
+  ],
+  [
+    'Registration',
+    /\bmust (?:pre-?)?register\b|\b(?:pre-?)?registration\b|\bregister (?:at|with|within|online|in the)\b|\barrival card\b|\blanding card\b/i,
+  ],
+  [
+    'Stay',
+    /\bwithin (?:any|a|each) \d|\bin any \d|\bin (?:a |any |each )?\d+[- ](?:day|month)s? period\b|\bon each visit\b|\bper (?:year|calendar)|\bextend|\bextension|\bmaximum stay\b|\bstays?\b/i,
+  ],
+];
+
+/** What a note is about, for the label shown before it. Undefined when it fits none. */
+export function noteLabel(note: string): NoteLabel | undefined {
+  return noteLabels.find(([, pattern]) => pattern.test(note))?.[0];
+}

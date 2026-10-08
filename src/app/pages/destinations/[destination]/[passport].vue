@@ -1,8 +1,20 @@
 <script setup lang="ts">
 import { countryNameInText } from '#shared/countries';
 import { countryFromSegment, destinationPath, entryPath, passportPath } from '#shared/country-paths';
-import { entryDescriptions } from '#shared/passports';
-import { dateLabel, entryAnswer, entryClasses, entryShortLabels, siteHost, typicalRequirements } from '~/utils/entry';
+import { nationality } from '#shared/nationalities';
+import { entryDescriptions, entryLabels, type EntryRule } from '#shared/passports';
+import {
+  dateLabel,
+  entryAnswer,
+  entryClasses,
+  entryHeadline,
+  entryShortLabels,
+  exceptionLine,
+  possessive,
+  siteHost,
+  typicalRequirements,
+  validityLabel,
+} from '~/utils/entry';
 import { followLink } from '~/utils/links';
 
 const route = useRoute();
@@ -24,13 +36,15 @@ const passportName = computed(() => data.value?.passport.name ?? passport.code);
 const destinationName = computed(() => data.value?.destination.name ?? destination.code);
 const destinationInText = computed(() => countryNameInText(destination.code, destinationName.value));
 const passportInText = computed(() => countryNameInText(passport.code, passportName.value));
-const answer = computed(() =>
-  entryAnswer(data.value?.rule ?? { status: 'unknown' }, passportName.value, destinationInText.value)
-);
+// Searchers name the passport's holders by nationality, "German citizens", not "Germany passport holders".
+const citizens = computed(() => `${nationality(passport.code)} citizens`);
+const scheme = computed(() => data.value?.authorisation?.name ?? 'eTA');
+const rule = computed<EntryRule>(() => data.value?.rule ?? { status: 'unknown' });
+const answer = computed(() => entryAnswer(rule.value, citizens.value, destinationInText.value, scheme.value));
 const regionInText = computed(() => (data.value?.region === 'Americas' ? 'the Americas' : data.value?.region));
 const officialSiteLabel = computed(() => {
-  const status = data.value?.rule.status;
-  return `Official ${status === 'eta' ? 'eTA' : status === 'e-visa' ? 'eVisa' : 'visa'} site`;
+  const status = rule.value.status;
+  return `Official ${status === 'eta' ? scheme.value : status === 'e-visa' ? 'eVisa' : 'visa'} site`;
 });
 // The rule's own official site, or else the destination's page about visas.
 const officialLink = computed(() => {
@@ -39,25 +53,48 @@ const officialLink = computed(() => {
   return undefined;
 });
 // The same for every destination, so it is labelled as typical.
-const typical = computed(() => typicalRequirements[data.value?.rule.status ?? 'unknown'] ?? []);
+const typical = computed(() => typicalRequirements[rule.value.status] ?? []);
+// What every visitor needs, from the destination's own policy, and the authorisation's full name.
+const facts = computed(() => {
+  const list: { label: string; text: string }[] = [];
+  if (data.value?.authorisation) list.push({ label: 'Authorisation', text: data.value.authorisation.full });
+  if (data.value?.facts?.passportValidity)
+    list.push({ label: 'Passport', text: validityLabel(data.value.facts.passportValidity) });
+  if (data.value?.facts?.arrivalCard)
+    list.push({ label: 'Arrival card', text: `${data.value.facts.arrivalCard}, filed online before arrival` });
+  return list;
+});
 const requirementsHeading = computed(() => {
-  switch (data.value?.rule.status) {
+  switch (rule.value.status) {
     case 'visa free':
       return 'Entry conditions';
     case 'eta':
-      return 'eTA requirements';
+      return `${scheme.value} requirements`;
     case 'no admission':
       return 'Entry restrictions';
     default:
       return 'Visa requirements';
   }
 });
+const ruleLabel = (item: EntryRule) => `${entryLabels[item.status]}${item.days ? `, ${item.days} days` : ''}`;
+const capitalized = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 usePageSeo({
-  title: () =>
-    `Do ${passportName.value} passport holders need a visa for ${destinationInText.value}? · Passport Unlock`,
-  description: () =>
-    data.value ? `${answer.value.text} Updated ${dateLabel(data.value.sourceDate, 'long')}.` : answer.value.text,
+  title: () => entryHeadline(rule.value, nationality(passport.code), destinationName.value, scheme.value),
+  description: () => {
+    if (!data.value) return answer.value.text;
+    const short =
+      rule.value.status === 'eta'
+        ? `No visa, but ${citizens.value} need an approved ${scheme.value} before they travel to ${destinationInText.value}${rule.value.days ? `, for stays of up to ${rule.value.days} days` : ''}.`
+        : answer.value.text;
+    const covers = [
+      data.value.exceptions.length && 'exceptions for visa holders',
+      data.value.facts?.passportValidity && 'passport validity',
+      data.value.notes.some(note => note.label === 'Fee') && 'fees',
+      officialLink.value && 'the official site',
+    ].filter(Boolean) as string[];
+    return `${short}${covers.length ? ` Plus ${new Intl.ListFormat('en').format(covers)}.` : ''} Checked ${dateLabel(data.value.sourceDate, 'long')}.`;
+  },
 });
 // Without a confirmed rule the page has nothing to answer with, so it stays out of search results.
 useSeoMeta({ robots: () => (data.value?.rule.status === 'unknown' ? 'noindex' : undefined) });
@@ -85,9 +122,24 @@ useSeoMeta({ robots: () => (data.value?.rule.status === 'unknown' ? 'noindex' : 
         <div>
           <p class="mb-3 text-[11px] font-semibold tracking-[0.18em] text-emerald-800 uppercase">Entry rules</p>
           <h1 class="text-4xl leading-tight font-semibold tracking-[-0.045em] sm:text-5xl">
-            Do {{ passportName }} passport holders need a visa for {{ destinationInText }}?
+            Do {{ citizens }} need a visa for {{ destinationInText }}?
           </h1>
-          <div class="mt-6"><DataNote :date="data.sourceDate" /></div>
+          <div class="mt-6 space-y-2">
+            <DataNote :date="data.sourceDate" />
+            <p
+              v-if="data.check?.result === 'confirmed' || data.check?.result === 'corrected'"
+              class="flex items-center gap-2 text-xs leading-6 text-emerald-800"
+            >
+              <AppIcon name="check" :size="14" />{{
+                data.check.result === 'confirmed'
+                  ? `Checked against ${possessive(destinationInText)} visa policy`
+                  : `Updated from ${possessive(destinationInText)} visa policy`
+              }}
+            </p>
+            <p v-if="data.changed" class="text-xs leading-6 text-stone-500">
+              Our rule changed on {{ dateLabel(data.changed.on) }}. Before that: {{ ruleLabel(data.changed.was) }}.
+            </p>
+          </div>
         </div>
         <div class="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
           <div class="flex items-center gap-3 text-stone-400">
@@ -100,20 +152,48 @@ useSeoMeta({ robots: () => (data.value?.rule.status === 'unknown' ? 'noindex' : 
           <p class="mt-6 text-3xl font-medium tracking-tight">{{ answer.title }}</p>
           <div class="mt-4"><EntryStatus :rule="data.rule" /></div>
           <p class="mt-4 text-sm leading-7 text-stone-700">{{ answer.text }}</p>
+          <div v-if="data.exceptions.length" class="mt-4 rounded-xl bg-emerald-50/70 px-4 py-3">
+            <p class="text-[10px] font-semibold tracking-[0.14em] text-emerald-800 uppercase">Exceptions</p>
+            <ul class="mt-1 space-y-1">
+              <li
+                v-for="exception in data.exceptions"
+                :key="exceptionLine(exception)"
+                class="text-sm leading-6 text-stone-700"
+              >
+                {{ exceptionLine(exception) }}
+              </li>
+            </ul>
+            <p class="mt-1 text-xs leading-6 text-stone-500">Conditions apply: see the notes below.</p>
+          </div>
+          <!-- Another account of the destination's policy disagrees, and nobody has checked which is right yet. -->
+          <div
+            v-if="data.check?.result === 'differs' && data.check.rule.status !== data.rule.status"
+            class="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs leading-6 text-amber-900"
+            role="note"
+          >
+            {{ capitalized(possessive(destinationInText)) }} visa policy lists this differently:
+            {{ ruleLabel(data.check.rule) }}. Check the official site before you travel.
+          </div>
+          <p
+            v-else-if="data.check?.result === 'differs'"
+            class="mt-4 rounded-xl bg-stone-50 px-4 py-3 text-xs leading-6 text-stone-600"
+            role="note"
+          >
+            {{ capitalized(possessive(destinationInText)) }} visa policy gives a different stay: up to
+            {{ data.check.rule.days }} days. Check it before you plan a long stay.
+          </p>
           <p class="mt-5 border-t border-stone-100 pt-5 text-xs leading-6 text-stone-500">
             {{ entryDescriptions[data.rule.status] }}
           </p>
         </div>
       </div>
       <section
-        v-if="data.notes.length || officialLink || typical.length"
+        v-if="data.notes.length || officialLink || typical.length || facts.length"
         class="mt-8 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8"
         aria-labelledby="requirements-heading"
       >
         <h2 id="requirements-heading" class="text-xl font-semibold tracking-tight">{{ requirementsHeading }}</h2>
-        <p class="mt-2 text-sm leading-7 text-stone-500">
-          For {{ passportName }} passport holders visiting {{ destinationInText }}.
-        </p>
+        <p class="mt-2 text-sm leading-7 text-stone-500">For {{ citizens }} visiting {{ destinationInText }}.</p>
         <template v-if="officialLink">
           <a
             :href="officialLink.url"
@@ -136,9 +216,21 @@ useSeoMeta({ robots: () => (data.value?.rule.status === 'unknown' ? 'noindex' : 
             fees.
           </p>
         </template>
+        <dl v-if="facts.length" class="mt-6 grid gap-3 sm:grid-cols-2">
+          <div v-for="fact in facts" :key="fact.label" class="rounded-xl bg-stone-50 px-4 py-3">
+            <dt class="text-[10px] font-semibold tracking-[0.14em] text-stone-500 uppercase">{{ fact.label }}</dt>
+            <dd class="mt-1 text-sm leading-6 text-stone-800">{{ fact.text }}</dd>
+          </div>
+        </dl>
         <ul v-if="data.notes.length" class="mt-6 space-y-3">
-          <li v-for="note in data.notes" :key="note" class="flex gap-3 text-sm leading-7 text-stone-700">
-            <span class="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600" aria-hidden="true" />{{ note }}
+          <li v-for="note in data.notes" :key="note.text" class="flex gap-3 text-sm leading-7 text-stone-700">
+            <span class="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600" aria-hidden="true" /><span
+              ><span
+                v-if="note.label"
+                class="mr-2 rounded bg-stone-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.1em] text-stone-600 uppercase"
+                >{{ note.label }}</span
+              >{{ note.text }}</span
+            >
           </li>
         </ul>
         <template v-if="typical.length">
@@ -149,13 +241,14 @@ useSeoMeta({ robots: () => (data.value?.rule.status === 'unknown' ? 'noindex' : 
             </li>
           </ul>
           <p class="mt-3 text-xs leading-6 text-stone-500">
-            Typical for this kind of {{ data.rule.status === 'eta' ? 'approval' : 'visa' }}, not specific to
+            Typical for this kind of {{ rule.status === 'eta' ? 'approval' : 'visa' }}, not specific to
             {{ destinationInText }}. The official site or an embassy has the exact list.
           </p>
         </template>
         <p class="mt-6 border-t border-stone-100 pt-5 text-xs leading-6 text-stone-500">
-          Requirements change, and some depend on where you live, the visas you already hold or your route. Confirm them
-          with the official site or an embassy before you travel.
+          The rule depends on the passport you travel on, not the country you fly from. Requirements change, and some
+          depend on where you live, the visas you already hold or your route. Confirm them with the official site or an
+          embassy before you travel.
         </p>
       </section>
       <section class="mt-8 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6" aria-labelledby="check-heading">
@@ -183,7 +276,7 @@ useSeoMeta({ robots: () => (data.value?.rule.status === 'unknown' ? 'noindex' : 
           <span class="mt-auto pt-6"
             ><span
               class="flex items-center justify-between border-t border-stone-300/70 pt-4 text-xs font-medium text-emerald-800"
-              >Every passport’s rule<AppIcon
+              >{{ destinationName }} visa requirements for every passport<AppIcon
                 name="arrow"
                 :size="18"
                 class="transition-transform group-hover:translate-x-1 motion-reduce:transform-none" /></span
@@ -206,7 +299,7 @@ useSeoMeta({ robots: () => (data.value?.rule.status === 'unknown' ? 'noindex' : 
           <span class="mt-auto pt-6"
             ><span
               class="flex items-center justify-between border-t border-stone-200 pt-4 text-xs font-medium text-emerald-800"
-              >Every destination for this passport<AppIcon
+              >Where else {{ citizens }} can go visa-free<AppIcon
                 name="arrow"
                 :size="18"
                 class="transition-transform group-hover:translate-x-1 motion-reduce:transform-none" /></span
@@ -218,7 +311,7 @@ useSeoMeta({ robots: () => (data.value?.rule.status === 'unknown' ? 'noindex' : 
         >
           <span class="text-xs font-medium text-stone-600">The other way</span>
           <span class="mt-4 text-sm leading-6"
-            >{{ destinationName }} passport holders visiting {{ passportInText }}</span
+            >{{ nationality(destination.code) }} citizens visiting {{ passportInText }}</span
           >
           <span class="mt-3"><EntryStatus :rule="data.reverse" /></span>
           <span class="mt-auto pt-6"
@@ -233,7 +326,7 @@ useSeoMeta({ robots: () => (data.value?.rule.status === 'unknown' ? 'noindex' : 
       </div>
       <section v-if="data.nearby.length" class="mt-11" aria-labelledby="nearby-heading">
         <h2 id="nearby-heading" class="text-xl font-semibold tracking-tight">
-          More of {{ regionInText }} for {{ passportName }} passport holders
+          More of {{ regionInText }} for {{ citizens }}
         </h2>
         <!-- Plain links keep these rows cheap to hydrate; the one listener keeps their clicks in the app. -->
         <ul class="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3" @click="followLink">

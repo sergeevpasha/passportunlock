@@ -1,6 +1,7 @@
 // The English Wikipedia article that lists the entry rules for each passport. The sync script reports titles it
 // cannot find; update this list if Wikipedia renames an article.
-const citizens: Record<string, string> = {
+/** How each article's title names the passport's citizens: "Visa requirements for German citizens". */
+export const citizens: Record<string, string> = {
   AD: 'Andorran',
   AE: 'Emirati',
   AF: 'Afghan',

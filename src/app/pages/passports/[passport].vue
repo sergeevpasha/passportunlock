@@ -2,7 +2,10 @@
 import { matchesCountry } from '#shared/catalogue';
 import { allCountries, countryNameInText } from '#shared/countries';
 import { countryFromSegment, entryPath, passportPath } from '#shared/country-paths';
-import { entryLabels, requirementTypes, type EntryRule } from '#shared/passports';
+import { nationality } from '#shared/nationalities';
+import { entryLabels, requirementTypes, type EntryRule, type EntryType } from '#shared/passports';
+import { dateLabel, entryClasses, entryShortLabels } from '~/utils/entry';
+import { followLink } from '~/utils/links';
 
 const route = useRoute();
 const country = countryFromSegment(route.params.passport);
@@ -10,20 +13,38 @@ if (!country) throw createError({ statusCode: 404, statusMessage: 'Page not foun
 if (!country.canonical) await navigateTo(passportPath(country.code), { redirectCode: 301 });
 const { data, error, refresh } = await useFetch(`/api/passports/${country.code.toLowerCase()}`);
 const name = computed(() => data.value?.passport.name ?? country.code);
+// Searchers name the holders by nationality: "visa-free countries for Dutch citizens".
+const citizens = `${nationality(country.code)} citizens`;
 
 usePageSeo({
-  title: () => `${name.value} passport: visa-free countries and visa requirements · Passport Unlock`,
+  // The count and the year answer "how many countries can a … passport visit" in the result itself.
+  title: () =>
+    data.value
+      ? `${name.value} passport: ${data.value.passport.visaFree} visa-free countries (${data.value.sourceDate.slice(0, 4)})`
+      : `${name.value} passport: visa-free countries`,
   description: () => {
-    if (!data.value) return `Where ${name.value} passport holders can travel without a visa.`;
-    const { counts, passport, passports } = data.value;
+    if (!data.value) return `Where ${citizens} can travel without a visa.`;
+    const { counts, passport, passports, sourceDate } = data.value;
     const parts = [
       [counts['visa on arrival'], 'offer a visa on arrival'],
       [counts.eta, 'need an eTA'],
       [counts['e-visa'], 'need an eVisa'],
     ].flatMap(([count, text]) => (count ? [`${count} ${text}`] : []));
-    return `${name.value} passport holders can visit ${passport.visaFree} of ${passport.total} destinations without a visa, rank ${passport.rank} of ${passports} passports.${parts.length ? ` Of the rest, ${new Intl.ListFormat('en').format(parts)}.` : ''}`;
+    return `${citizens} can visit ${passport.visaFree} of ${passport.total} destinations without a visa, rank ${passport.rank} of ${passports} passports.${parts.length ? ` Of the rest, ${new Intl.ListFormat('en').format(parts)}.` : ''} Full list, checked ${dateLabel(sourceDate, 'long')}.`;
   },
 });
+// The heading over each entry type's list, in the words of the searches it answers.
+const headings: Record<EntryType, string> = {
+  'visa free': `Visa-free countries for ${citizens}`,
+  'visa on arrival': 'Visa on arrival',
+  eta: 'No visa, but an eTA first',
+  'e-visa': 'eVisa needed',
+  'visa required': 'Visa needed in advance',
+  'no admission': 'Entry restricted',
+  domestic: 'Home country',
+  unknown: 'Not confirmed',
+};
+const { target: mapTarget, seen: mapSeen } = useSeenOnce();
 
 const search = ref('');
 const group = ref(allCountries);
@@ -42,7 +63,7 @@ const rows = computed(() =>
     .map(destination => ({
       ...destination,
       href: entryPath(destination.code, country.code),
-      linkLabel: `${name.value} passport holders visiting ${countryNameInText(destination.code, destination.name)}`,
+      linkLabel: `${citizens} visiting ${countryNameInText(destination.code, destination.name)}`,
     }))
 );
 // Each country on the map is a destination, coloured by how the passport's holders enter it.
@@ -82,7 +103,7 @@ function clearFilters() {
             <CountryFlag :code="country.code" :size="44" eager />{{ name }} passport
           </h1>
           <p class="mt-4 max-w-2xl text-sm leading-7 text-stone-500 sm:text-base">
-            Where {{ name }} passport holders can travel without a visa, and the entry rule for every other destination.
+            Where {{ citizens }} can travel without a visa, and the entry rule for every other destination.
           </p>
         </div>
       </div>
@@ -157,21 +178,57 @@ function clearFilters() {
         <div class="p-6 sm:p-8">
           <p class="text-[10px] font-semibold tracking-[0.14em] text-emerald-800 uppercase">Map</p>
           <h2 id="map-heading" class="mt-3 max-w-70 text-3xl leading-tight font-medium tracking-tight">
-            Where {{ name }} passport holders can go
+            Where {{ citizens }} can go
           </h2>
           <p class="mt-3 max-w-75 text-xs leading-6 text-stone-600">
-            Each destination is coloured by how {{ name }} passport holders can enter it.
+            Each destination is coloured by how {{ citizens }} can enter it.
           </p>
         </div>
-        <div class="p-5">
-          <!-- The map projects every country in the browser, so its code loads once the map scrolls into view. -->
+        <!-- The map is drawn in the browser once it is near the screen: its shapes would double the page's size, and
+             the lists below give every rule in words. The box keeps the map's proportions until then. -->
+        <div ref="mapTarget" class="p-5">
           <LazyPassportMap
+            v-if="mapSeen"
             :rows="mapRows"
             :passports="[{ name }]"
             :passport="0"
-            :label="`World map of how ${name} passport holders can enter each destination. The table below lists every rule.`"
-            hydrate-on-visible
+            :label="`World map of how ${citizens} can enter each destination. The lists below give every rule.`"
           />
+          <div v-else class="aspect-[1000/520] w-full" />
+        </div>
+      </section>
+      <section v-if="data.unlocks.length" class="mt-10" aria-labelledby="unlocks-heading">
+        <h2 id="unlocks-heading" class="text-xl font-semibold tracking-tight">
+          What another country’s visa unlocks for {{ citizens }}
+        </h2>
+        <p class="mt-2 max-w-3xl text-sm leading-7 text-stone-500">
+          With a valid visa or residence permit from one of these countries, {{ citizens }} can enter more destinations
+          or apply more easily. Conditions differ, such as a visa that must be multiple-entry or already used, so each
+          destination’s page gives them.
+        </p>
+        <div class="mt-5 grid gap-4 lg:grid-cols-2">
+          <section
+            v-for="unlock in data.unlocks.slice(0, 6)"
+            :key="unlock.issuer"
+            class="rounded-2xl border border-stone-200 bg-white p-5"
+          >
+            <h3 class="text-sm font-semibold">
+              A visa or residence permit from {{ unlock.issuer }}
+              <span class="font-normal text-stone-500">({{ unlock.destinations.length }})</span>
+            </h3>
+            <ul class="mt-3 flex flex-wrap gap-2" @click="followLink">
+              <li v-for="item in unlock.destinations" :key="item.code">
+                <a
+                  :href="entryPath(item.code, country.code)"
+                  class="inline-flex items-center gap-2 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs hover:border-emerald-700/40"
+                  >{{ item.name
+                  }}<span class="rounded px-1.5 py-0.5 text-[10px] font-medium" :class="entryClasses[item.grants]">{{
+                    entryShortLabels[item.grants]
+                  }}</span></a
+                >
+              </li>
+            </ul>
+          </section>
         </div>
       </section>
       <section class="mt-10" aria-labelledby="destinations-heading">
@@ -184,29 +241,14 @@ function clearFilters() {
         <CountryFilters v-model:search="search" v-model:group="group" placeholder="Find a destination…"
           ><SelectMenu v-model="category" :options="categories" label="Filter by entry requirement" class="sm:w-52"
         /></CountryFilters>
-        <div v-if="rows.length" class="mt-5 overflow-x-auto rounded-2xl border border-stone-200 bg-white">
-          <table class="w-full text-left text-sm">
-            <caption class="sr-only">
-              The entry rule for
-              {{
-                name
-              }}
-              passport holders at each destination.
-            </caption>
-            <thead class="border-b border-stone-200 bg-stone-50 text-[10px] tracking-[0.12em] text-stone-500 uppercase">
-              <tr>
-                <th scope="col" class="px-4 py-4 font-medium sm:px-6">Destination</th>
-                <th scope="col" class="hidden px-6 py-4 font-medium md:table-cell">Region</th>
-                <th scope="col" class="px-4 py-4 font-medium sm:px-6">Entry rule</th>
-                <th scope="col" class="hidden px-6 py-4 font-medium sm:table-cell">
-                  <span class="sr-only">Details</span>
-                </th>
-              </tr>
-            </thead>
-            <!-- 198 linked rows hydrate once they scroll into view, like the ranking rows. -->
-            <LazyEntryRows :rows="rows" hydrate-on-visible />
-          </table>
-        </div>
+        <EntryGroups
+          v-if="rows.length"
+          class="mt-6"
+          :rows="rows"
+          :headings="headings"
+          column="Destination"
+          :caption="`The entry rule for ${citizens} at each destination`"
+        />
         <EmptyState v-else class="mt-5"
           ><button type="button" class="text-sm text-emerald-800 underline" @click="clearFilters">
             Clear filters

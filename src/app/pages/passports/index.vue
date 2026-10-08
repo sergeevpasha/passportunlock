@@ -2,6 +2,8 @@
 import { matchesCountry } from '#shared/catalogue';
 import { maxPassports } from '#shared/comparison-query';
 import { allCountries, countryGroupIds } from '#shared/countries';
+import { passportPath } from '#shared/country-paths';
+import { followLink } from '~/utils/links';
 usePageSeo({
   title: 'All passports · Passport Unlock',
   description:
@@ -101,6 +103,18 @@ function resetFilters() {
         Show more passports <span class="ml-2 text-stone-500">{{ visible.length }} / {{ filtered.length }}</span>
       </button>
     </div>
+    <!-- The cards show a few at a time; this index links every passport's page from the first view, for readers who
+         know which one they want and for search engines. Plain links keep it cheap to hydrate. -->
+    <section v-if="data" class="mt-12 border-t border-stone-200 pt-8" aria-labelledby="index-heading">
+      <h2 id="index-heading" class="text-sm font-semibold">All {{ data.passports.length }} passports, A to Z</h2>
+      <ul class="mt-4 columns-2 gap-x-6 text-xs leading-7 sm:columns-3 lg:columns-5" @click="followLink">
+        <li v-for="passport in [...data.passports].sort((a, b) => a.name.localeCompare(b.name))" :key="passport.code">
+          <a :href="passportPath(passport.code)" class="text-stone-600 hover:text-emerald-800"
+            >{{ passport.name }}<span class="sr-only"> passport</span></a
+          >
+        </li>
+      </ul>
+    </section>
     <div
       v-if="selected.length"
       class="fixed inset-x-4 bottom-4 z-20 mx-auto max-w-3xl rounded-2xl border border-emerald-800 bg-emerald-950 p-4 text-white shadow-2xl sm:inset-x-8 sm:p-5"

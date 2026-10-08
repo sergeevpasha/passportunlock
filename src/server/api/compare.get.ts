@@ -23,10 +23,15 @@ export default defineEventHandler(async event => {
     const snapshot = snapshots.find(item => item.id === id) ?? latest;
     return { code, snapshot };
   });
-  // Snapshot details, without the rules and the article revisions they were read from.
-  const metadata = ({ matrix: _matrix, pages: _pages, ...snapshot }: Snapshot) => ({
-    ...snapshot,
-    ageDays: sourceAgeDays(snapshot.sourceDate),
+  // What the page says about a snapshot. The rest of it (notes, sites, checks, history) is megabytes the comparison
+  // doesn't show.
+  const metadata = ({ id, source, sourceUrl, sourceDate, license }: Snapshot) => ({
+    id,
+    source,
+    sourceUrl,
+    sourceDate,
+    license,
+    ageDays: sourceAgeDays(sourceDate),
   });
   setHeader(event, 'Cache-Control', 'no-store');
   return {

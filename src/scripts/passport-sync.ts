@@ -17,6 +17,11 @@ import {
   type OfficialSite,
   type OfficialSites,
 } from '../shared/requirements.ts';
+import { parsePolicyPage, type DestinationPolicy } from '../shared/destination-policy.ts';
+import { historyOf, nextHistory } from '../shared/history.ts';
+import { checkRules, materialDifference, type DestinationFacts, type PolicyReview } from '../shared/policy-checks.ts';
+import { policyPages } from '../shared/policy-pages.ts';
+import { policyReviews as chosenReviews } from '../shared/policy-reviews.ts';
 import { coverageIssues, noteIssues, publicationIssues } from '../shared/sync-policy.ts';
 import {
   missingSharedNotes,
@@ -38,6 +43,10 @@ interface SyncOptions {
   baselineDirectory?: string;
   /** Each destination's official visa information page; `visaPages` from shared/visa-pages.ts by default. */
   visaPages?: Record<string, string>;
+  /** Reviews of destinations whose own visa policy differs; `policyReviews` from shared/policy-reviews.ts by default. */
+  policyReviews?: Record<string, PolicyReview>;
+  /** The module that imports the bundled snapshot, which a baseline points at the new one. */
+  dataModule?: string;
 }
 
 interface SyncDependencies {
@@ -64,9 +73,16 @@ async function publicLookup(host: string) {
 
 /** Importing the workflow has no side effects. Only an explicit run takes a lock, fetches articles and writes files. */
 export async function runSync(options: SyncOptions = {}, dependencies: SyncDependencies = {}) {
-  const { publish = false, baseline = false, acceptLargeChange = false, visaPages = chosenVisaPages } = options;
+  const {
+    publish = false,
+    baseline = false,
+    acceptLargeChange = false,
+    visaPages = chosenVisaPages,
+    policyReviews = chosenReviews,
+  } = options;
   const directory = resolve(options.directory ?? '.data/passports');
   const baselineDirectory = resolve(options.baselineDirectory ?? 'server/data');
+  const dataModule = resolve(options.dataModule ?? 'server/utils/passport-data.ts');
   const {
     fetch: request = fetch,
     now = () => new Date(),
@@ -173,13 +189,13 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
     return JSON.parse(await readFile(path, 'utf8')) as Snapshot;
   }
 
+  const bundledNames = async () =>
+    (await readdir(baselineDirectory)).filter(name => /^\d{4}-\d{2}-\d{2}\.json$/.test(name)).sort();
+
   /** The snapshot the app serves now: the newest bundled one, unless a later one was published. None before the first
    * baseline. */
   async function servedSnapshot(directory: string): Promise<Snapshot | undefined> {
-    const newest = (await readdir(baselineDirectory))
-      .filter(name => /^\d{4}-\d{2}-\d{2}\.json$/.test(name))
-      .sort()
-      .at(-1);
+    const newest = (await bundledNames()).at(-1);
     const bundled = newest ? await readSnapshot(resolve(baselineDirectory, newest)) : undefined;
     try {
       const published = await readSnapshot(resolve(directory, 'current.json'));
@@ -288,7 +304,12 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
     const current = await servedSnapshot(directory);
     const codes = Object.keys(wikipediaPages).sort();
     const index = nameIndex(codes);
-    const articles = await fetchArticles([...codes.map(code => wikipediaPages[code]!), sharedNotesTitle]);
+    const policyTitles = [...new Set(codes.flatMap(code => policyPages[code] ?? []))];
+    const articles = await fetchArticles([
+      ...codes.map(code => wikipediaPages[code]!),
+      sharedNotesTitle,
+      ...policyTitles,
+    ]);
     const shared = articles.get(sharedNotesTitle);
     const sections = sharedNoteSections(shared?.text ?? '');
 
@@ -328,12 +349,51 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
       }
     }
     parseMatrix(matrix, codes, { complete: false });
+
+    // Each destination's own visa policy checks its rules, and corrects them where a review trusts it.
+    const policies: Record<string, DestinationPolicy> = {};
+    const policyRevisions: Record<string, SnapshotPage> = {};
+    const missingPolicyPages: string[] = [];
+    for (const destination of codes) {
+      const article = policyPages[destination] ? articles.get(policyPages[destination]) : undefined;
+      if (!article) {
+        missingPolicyPages.push(destination);
+        continue;
+      }
+      policies[destination] = parsePolicyPage(article.text, destination, index, now());
+      policyRevisions[destination] = { title: article.title, revision: article.revision, edited: article.edited };
+    }
+    const checked = checkRules(matrix, policies, policyReviews);
+    // A corrected rule's notes describe the rule it replaced.
+    for (const [destination, passports] of Object.entries(checked.checks.corrected))
+      for (const passport of passports) delete notes[passport]?.[destination];
+    const destinationFacts: Record<string, DestinationFacts> = {};
+    for (const [destination, { passportValidity, arrivalCard }] of Object.entries(policies)) {
+      if (passportValidity || arrivalCard)
+        destinationFacts[destination] = {
+          ...(passportValidity && { passportValidity }),
+          ...(arrivalCard && { arrivalCard }),
+        };
+    }
+
     const ruleNotes = indexNotes(notes);
+    // Sites come from the cells that cite them, so they follow the rules those cells give.
     const { sites, unverified, gone } = await officialSites(officialSiteCandidates(cited, matrix));
     const visaInformation = await checkedVisaPages();
 
     const fetchedAt = now().toISOString();
     const sourceDate = fetchedAt.slice(0, 10);
+    // Snapshots made before histories were stored get one from the bundled snapshots before them.
+    let previous = current;
+    if (current && !current.history) {
+      const earlier: Snapshot[] = [];
+      for (const name of await bundledNames()) {
+        const snapshot = await readSnapshot(resolve(baselineDirectory, name));
+        if (snapshot.sourceDate < current.sourceDate) earlier.push(snapshot);
+      }
+      previous = { ...current, history: historyOf([...earlier, current]) };
+    }
+    const history = nextHistory(previous, checked.matrix, sourceDate);
     const snapshot: Snapshot = {
       id: sourceDate,
       source: wikipediaSource.name,
@@ -342,25 +402,42 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
       fetchedAt,
       revision: createHash('sha256')
         .update(
-          [...Object.entries(pages), ...(shared ? [['shared', shared] as const] : [])]
+          [
+            ...Object.entries(pages),
+            ...(shared ? [['shared', shared] as const] : []),
+            ...Object.entries(policyRevisions).map(([code, page]) => [`policy:${code}`, page] as const),
+          ]
             .map(([code, page]) => `${code}:${page.revision}`)
             .join('\n')
         )
         .digest('hex'),
       sha256: createHash('sha256')
-        .update(JSON.stringify({ matrix, notes: ruleNotes, officialSites: sites, visaPages: visaInformation.pages }))
+        .update(
+          JSON.stringify({
+            matrix: checked.matrix,
+            notes: ruleNotes,
+            officialSites: sites,
+            visaPages: visaInformation.pages,
+            policyChecks: checked.checks,
+            destinationFacts,
+          })
+        )
         .digest('hex'),
       license: wikipediaSource.license,
       pages,
       ...(shared && { sharedNotes: { title: shared.title, revision: shared.revision, edited: shared.edited } }),
-      matrix,
+      matrix: checked.matrix,
       notes: ruleNotes,
       officialSites: sites,
       visaPages: visaInformation.pages,
+      policyPages: policyRevisions,
+      policyChecks: checked.checks,
+      destinationFacts,
+      history,
     };
 
     const total = codes.length * (codes.length - 1);
-    const changes = changedRules(current?.matrix ?? {}, matrix).map(
+    const changes = changedRules(current?.matrix ?? {}, checked.matrix).map(
       change => `${change.passport} → ${change.destination}: ${describe(change.before)} → ${describe(change.after)}`
     );
     const missingCells = Object.values(missing).reduce((sum, list) => sum + list.length, 0);
@@ -386,6 +463,23 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
         total: noteCount + unreadableNotes.length,
       }),
     ];
+    // Differences that change what a traveller does, by destination, for review.
+    const differences = Object.entries(checked.checks.differs)
+      .map(([destination, rules]) => {
+        const material = Object.entries(rules).filter(([passport, listed]) =>
+          materialDifference(checked.matrix[passport]![destination]!, listed)
+        );
+        const kinds = new Map<string, number>();
+        for (const [passport, listed] of material) {
+          const key = `${describe(checked.matrix[passport]![destination]!)} → ${describe(listed)}`;
+          kinds.set(key, (kinds.get(key) ?? 0) + 1);
+        }
+        const top = [...kinds].sort((a, b) => b[1] - a[1]).slice(0, 3);
+        return { destination, count: material.length, summary: top.map(([key, n]) => `${key} ×${n}`).join(', ') };
+      })
+      .filter(entry => entry.count)
+      .sort((a, b) => b.count - a.count);
+    const confirmed = Object.values(checked.checks.confirmed).reduce((sum, list) => sum + list.length, 0);
     const report = {
       checkedAt: fetchedAt,
       sourceDate,
@@ -410,6 +504,18 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
       visaPages: Object.keys(visaInformation.pages).length,
       unverifiedVisaPages: visaInformation.unverified,
       droppedVisaPages: visaInformation.gone,
+      policyPages: Object.keys(policyRevisions).length,
+      missingPolicyPages,
+      // Destination articles that list fewer than 20 passports are probably read badly; they confirm little.
+      thinPolicyPages: Object.entries(policies)
+        .filter(([, policy]) => Object.keys(policy.rules).length < 20)
+        .map(([destination]) => destination),
+      confirmedRules: confirmed,
+      correctedRules: Object.fromEntries(
+        Object.entries(checked.checks.corrected).map(([destination, passports]) => [destination, passports.length])
+      ),
+      policyDifferences: differences.map(entry => `${entry.destination}: ${entry.count} (${entry.summary})`),
+      destinationFacts: Object.keys(destinationFacts).length,
       changed: changes.length,
       total,
       sampleChanges: changes.slice(0, 40),
@@ -429,7 +535,18 @@ export async function runSync(options: SyncOptions = {}, dependencies: SyncDepen
     } else {
       if (baseline) {
         await writeFile(resolve(baselineDirectory, `${sourceDate}.json`), JSON.stringify(snapshot) + '\n');
-        log(`Wrote server/data/${sourceDate}.json. Import it in server/utils/passport-data.ts.\n`);
+        // The app imports one bundled snapshot by name.
+        try {
+          const source = await readFile(dataModule, 'utf8');
+          await writeFile(
+            dataModule,
+            source.replace(/(['"]\.\.\/data\/)\d{4}-\d{2}-\d{2}(\.json['"])/, `$1${sourceDate}$2`)
+          );
+          log(`Wrote server/data/${sourceDate}.json and pointed server/utils/passport-data.ts at it.\n`);
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+          log(`Wrote server/data/${sourceDate}.json. Import it in server/utils/passport-data.ts.\n`);
+        }
       }
       if (publish && (current?.sha256 !== snapshot.sha256 || current.sourceDate !== sourceDate)) {
         if (current) {

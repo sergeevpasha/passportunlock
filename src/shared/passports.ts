@@ -1,3 +1,5 @@
+import type { RuleHistory } from './history.ts';
+import type { DestinationFacts, PolicyChecks } from './policy-checks.ts';
 import type { OfficialSites, RuleNotes } from './requirements.ts';
 
 export const requirementTypes = [
@@ -43,6 +45,14 @@ export interface Snapshot {
   officialSites?: OfficialSites;
   /** Each destination's official visa information page from `visaPages`, minus those the sync found gone. */
   visaPages?: Record<string, string>;
+  /** The revision of each destination's own visa policy article that its rules were checked against. */
+  policyPages?: Record<string, SnapshotPage>;
+  /** How each rule compares with its destination's own visa policy. */
+  policyChecks?: PolicyChecks;
+  /** What every visitor to a destination needs, from its own visa policy. */
+  destinationFacts?: Record<string, DestinationFacts>;
+  /** When each rule last changed. */
+  history?: RuleHistory;
 }
 export const entryLabels: Record<EntryType, string> = {
   'visa free': 'Visa-free',

@@ -2,9 +2,10 @@
 import { matchesCountry } from '#shared/catalogue';
 import { allCountries, countryNameInText } from '#shared/countries';
 import { countryFromSegment, destinationPath, entryPath } from '#shared/country-paths';
-import { entryLabels, requirementTypes, type EntryRule } from '#shared/passports';
+import { nationality } from '#shared/nationalities';
+import { entryLabels, requirementTypes, type EntryRule, type EntryType } from '#shared/passports';
 import { approvalKinds } from '#shared/requirements';
-import { entryShortLabels, siteHost, sitePage } from '~/utils/entry';
+import { dateLabel, entryShortLabels, possessive, siteHost, sitePage, validityLabel } from '~/utils/entry';
 
 const route = useRoute();
 const country = countryFromSegment(route.params.destination);
@@ -15,10 +16,13 @@ const name = computed(() => data.value?.destination.name ?? country.code);
 const nameInText = computed(() => countryNameInText(country.code, name.value));
 
 usePageSeo({
-  title: () => `${name.value} visa requirements for every passport · Passport Unlock`,
+  title: () =>
+    data.value
+      ? `${name.value} visa requirements by nationality (${data.value.sourceDate.slice(0, 4)})`
+      : `${name.value} visa requirements by nationality`,
   description: () => {
-    if (!data.value) return `How holders of every passport can enter ${nameInText.value}.`;
-    const { counts, destination } = data.value;
+    if (!data.value) return `Who needs a visa for ${nameInText.value}, for every passport.`;
+    const { counts, destination, facts, sourceDate } = data.value;
     const parts = [
       [counts['visa free'], 'can visit without a visa'],
       [counts['visa on arrival'], 'can get a visa on arrival'],
@@ -26,9 +30,35 @@ usePageSeo({
       [counts['e-visa'], 'need an eVisa'],
       [counts['visa required'], 'need a visa in advance'],
     ].flatMap(([count, text]) => (count ? [`${count} ${text}`] : []));
-    return `How holders of each of the ${destination.total} other passports can enter ${nameInText.value}: ${new Intl.ListFormat('en').format(parts)}.`;
+    const extras = [facts?.passportValidity && 'passport validity', facts?.arrivalCard && 'the arrival card'].filter(
+      Boolean
+    ) as string[];
+    return `Who needs a visa for ${nameInText.value}: of ${destination.total} passports, ${new Intl.ListFormat('en').format(parts)}.${extras.length ? ` Plus ${new Intl.ListFormat('en').format(extras)}.` : ''} Checked ${dateLabel(sourceDate, 'long')}.`;
   },
 });
+// The heading over each entry type's list of passports.
+const headings: Record<EntryType, string> = {
+  'visa free': `Passports that can visit ${nameInText.value} without a visa`,
+  'visa on arrival': 'Visa on arrival',
+  eta: `No visa, but ${data.value?.authorisation?.name ?? 'an eTA'} first`,
+  'e-visa': 'eVisa needed',
+  'visa required': 'Visa needed in advance',
+  'no admission': 'Entry restricted',
+  domestic: 'Home country',
+  unknown: 'Not confirmed',
+};
+// What every visitor needs, from the destination's own policy.
+const facts = computed(() => {
+  const list: { label: string; text: string }[] = [];
+  if (data.value?.facts?.passportValidity)
+    list.push({ label: 'Passport', text: validityLabel(data.value.facts.passportValidity) });
+  if (data.value?.facts?.arrivalCard)
+    list.push({ label: 'Arrival card', text: `${data.value.facts.arrivalCard}, filed online before arrival` });
+  if (data.value?.authorisation)
+    list.push({ label: 'eTA', text: `${data.value.authorisation.full}, for the passports that need one` });
+  return list;
+});
+const { target: mapTarget, seen: mapSeen } = useSeenOnce();
 
 // The destination's page about visas and its site for each entry type that needs one, once per page.
 const officialSites = computed(() => {
@@ -65,7 +95,7 @@ const rows = computed(() =>
     .map(passport => ({
       ...passport,
       href: entryPath(country.code, passport.code),
-      linkLabel: `${passport.name} passport holders visiting ${nameInText.value}`,
+      linkLabel: `${nationality(passport.code)} citizens visiting ${nameInText.value}`,
     }))
 );
 // Each country on the map is a passport, coloured by how its holders enter; the destination itself is home.
@@ -97,7 +127,13 @@ function clearFilters() {
           How holders of every other passport can enter {{ nameInText }}, and for how long.
         </p>
       </div>
-      <DataNote :date="data?.sourceDate" />
+      <div class="space-y-2">
+        <DataNote :date="data?.sourceDate" />
+        <p v-if="data?.confirmed" class="flex items-center gap-2 text-xs leading-6 text-emerald-800">
+          <AppIcon name="check" :size="14" />{{ data.confirmed }} of {{ data.destination.total }} rules checked against
+          {{ possessive(nameInText) }} visa policy
+        </p>
+      </div>
     </div>
     <EmptyState
       v-if="error"
@@ -149,12 +185,18 @@ function clearFilters() {
         </div>
       </div>
       <section
-        v-if="officialSites.length"
+        v-if="officialSites.length || facts.length"
         class="mt-5 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6"
         aria-labelledby="official-heading"
       >
-        <h2 id="official-heading" class="text-sm font-semibold">Official sites</h2>
-        <ul class="mt-4 flex flex-wrap gap-3">
+        <h2 id="official-heading" class="text-sm font-semibold">Before you travel to {{ nameInText }}</h2>
+        <dl v-if="facts.length" class="mt-4 grid gap-3 sm:grid-cols-3">
+          <div v-for="fact in facts" :key="fact.label" class="rounded-xl bg-stone-50 px-4 py-3">
+            <dt class="text-[10px] font-semibold tracking-[0.14em] text-stone-500 uppercase">{{ fact.label }}</dt>
+            <dd class="mt-1 text-sm leading-6 text-stone-800">{{ fact.text }}</dd>
+          </div>
+        </dl>
+        <ul v-if="officialSites.length" class="mt-4 flex flex-wrap gap-3">
           <li v-for="site in officialSites" :key="site.url" class="max-w-full">
             <a
               :href="site.url"
@@ -167,7 +209,7 @@ function clearFilters() {
             /></a>
           </li>
         </ul>
-        <p class="mt-3 text-xs leading-6 text-stone-500">
+        <p v-if="officialSites.length" class="mt-3 text-xs leading-6 text-stone-500">
           The official sites for visitors to {{ nameInText }}. Agency sites with similar names charge extra fees.
         </p>
       </section>
@@ -188,17 +230,18 @@ function clearFilters() {
             Each country is coloured by how holders of its passport can enter {{ nameInText }}.
           </p>
         </div>
-        <div class="p-5">
-          <!-- The map projects every country in the browser, so its code loads once the map scrolls into view. -->
+        <!-- Drawn in the browser once near the screen, as on a passport's page. -->
+        <div ref="mapTarget" class="p-5">
           <LazyPassportMap
+            v-if="mapSeen"
             :rows="mapRows"
             :passports="[{ name }]"
             :passport="0"
             unit="passport"
             :home="{ label: name, description: `The destination itself. Its own citizens need no visa.` }"
-            :label="`World map of how each passport’s holders can enter ${nameInText}. The table below lists every rule.`"
-            hydrate-on-visible
+            :label="`World map of how each passport’s holders can enter ${nameInText}. The lists below give every rule.`"
           />
+          <div v-else class="aspect-[1000/520] w-full" />
         </div>
       </section>
       <section class="mt-10" aria-labelledby="passports-heading">
@@ -209,29 +252,14 @@ function clearFilters() {
         <CountryFilters v-model:search="search" v-model:group="group" placeholder="Find a passport…"
           ><SelectMenu v-model="category" :options="categories" label="Filter by entry requirement" class="sm:w-52"
         /></CountryFilters>
-        <div v-if="rows.length" class="mt-5 overflow-x-auto rounded-2xl border border-stone-200 bg-white">
-          <table class="w-full text-left text-sm">
-            <caption class="sr-only">
-              The entry rule for
-              {{
-                nameInText
-              }}
-              for holders of each passport.
-            </caption>
-            <thead class="border-b border-stone-200 bg-stone-50 text-[10px] tracking-[0.12em] text-stone-500 uppercase">
-              <tr>
-                <th scope="col" class="px-4 py-4 font-medium sm:px-6">Passport</th>
-                <th scope="col" class="hidden px-6 py-4 font-medium md:table-cell">Region</th>
-                <th scope="col" class="px-4 py-4 font-medium sm:px-6">Entry rule</th>
-                <th scope="col" class="hidden px-6 py-4 font-medium sm:table-cell">
-                  <span class="sr-only">Details</span>
-                </th>
-              </tr>
-            </thead>
-            <!-- 198 linked rows hydrate once they scroll into view, like the ranking rows. -->
-            <LazyEntryRows :rows="rows" hydrate-on-visible />
-          </table>
-        </div>
+        <EntryGroups
+          v-if="rows.length"
+          class="mt-6"
+          :rows="rows"
+          :headings="headings"
+          column="Passport"
+          :caption="`The entry rule for ${nameInText} for holders of each passport`"
+        />
         <EmptyState v-else class="mt-5"
           ><button type="button" class="text-sm text-emerald-800 underline" @click="clearFilters">
             Clear filters

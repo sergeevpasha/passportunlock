@@ -1,0 +1,62 @@
+# Refreshes the visa data every week: the sync reads the articles again, checks the official sites, and writes a new
+# snapshot that the app imports. When every check passes and the tests do too, the snapshot is committed to master,
+# which deploys it. A sync that holds its candidate back (exit code 2: too many changes, missing articles, unreadable
+# notes) fails the run instead, with its report attached, for a person to review.
+name: Sync visa data
+
+on:
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-data
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install
+        run: corepack enable && COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack yarn install --immutable
+      - name: Sync
+        env:
+          WIKIMEDIA_CONTACT: https://passportunlock.com
+        run: node scripts/sync-passports.ts --baseline
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sync-report
+          path: src/.data/passports/last-check.json
+          if-no-files-found: ignore
+      - name: Test
+        run: COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack yarn test
+      - name: Commit the snapshot
+        run: |
+          newest=$(ls server/data/*.json | sort | tail -n 1)
+          # Earlier snapshots go, except the ones the tests read as fixtures.
+          for snapshot in server/data/*.json; do
+            [ "$snapshot" = "$newest" ] && continue
+            grep -rqF "$(basename "$snapshot")" test || git rm -q "$snapshot"
+          done
+          git add server/data server/utils/passport-data.ts
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -q -m "chore: sync visa data $(basename "$newest" .json)"
+          git push origin HEAD:master

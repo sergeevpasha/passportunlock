@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { passportPath } from '#shared/country-paths';
+import { countryName } from '#shared/countries';
+import { destinationPath, passportPath } from '#shared/country-paths';
 import { dateLabel } from '~/utils/entry';
 const description =
   'Check whether you need a visa for your trip, see where each of 199 passports can travel without one, compare passports side by side, and see how they rank.';
@@ -23,6 +24,12 @@ const route = useRoute();
 if (route.query.p1) await navigateTo({ path: '/compare', query: route.query }, { redirectCode: 301 });
 const { data } = await useFetch('/api/passports');
 const featured = computed(() => data.value?.passports.slice(0, 4) ?? []);
+// The passports and destinations people search for most, from search impressions in October 2026, so their pages are
+// one link from the home page.
+const popular = {
+  passports: 'GB US IN PH MY IE PK NG CN BD ID CA AU DE RU UA AR HK TW ZA BR MX EG NL'.split(' '),
+  destinations: 'MY TH JP GB US HK IN NL IT FR ES TR AE SG KR VN ID CN CA AU NZ IL GE KE'.split(' '),
+};
 </script>
 
 <template>
@@ -197,6 +204,25 @@ const featured = computed(() => data.value?.passports.slice(0, 4) ?? []);
       </div>
       <div v-else class="self-center text-sm text-stone-500">
         The ranking couldn’t load. Reload the page to try again.
+      </div>
+    </section>
+
+    <section class="mt-11 grid gap-8 border-t border-stone-200 pt-8 lg:grid-cols-2" aria-label="Popular pages">
+      <div v-for="list in ['passports', 'destinations'] as const" :key="list">
+        <h2 class="text-sm font-semibold">
+          {{ list === 'passports' ? 'Popular passports' : 'Popular destinations' }}
+        </h2>
+        <ul class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+          <li v-for="code in popular[list]" :key="code">
+            <NuxtLink
+              :to="list === 'passports' ? passportPath(code) : destinationPath(code)"
+              class="flex items-center gap-2 text-xs text-stone-600 hover:text-emerald-800"
+              ><CountryFlag :code="code" :size="16" />{{ countryName(code)
+              }}<span v-if="list === 'passports'" class="sr-only"> passport</span
+              ><span v-else class="sr-only"> visa requirements</span></NuxtLink
+            >
+          </li>
+        </ul>
       </div>
     </section>
   </div>

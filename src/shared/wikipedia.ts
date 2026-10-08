@@ -322,7 +322,7 @@ const footnote = /\{\{\s*(?:refn|efn|efn-[a-z]+|notetag|sfn|r)\s*[|}]/i;
 
 /** Footnotes are citations too, and they can nest templates and run over several lines, so they go before the text is
  * split into lines. Unclosed markup removes the rest of the text. */
-function withoutFootnotes(wikitext: string) {
+export function withoutFootnotes(wikitext: string) {
   let text = wikitext;
   for (let match = text.match(footnote); match; match = text.match(footnote)) {
     let depth = 0;

@@ -1,7 +1,9 @@
 import { readFile, stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import wikipedia from '../data/2026-10-05.json';
+import wikipedia from '../data/2026-10-08.json';
+import { parseHistory } from '#shared/history';
 import { parseMatrix, type Snapshot } from '#shared/passports';
+import { parseDestinationFacts, parsePolicyChecks } from '#shared/policy-checks';
 import { parseNotes, parseOfficialSites, parseVisaPages } from '#shared/requirements';
 import { wikipediaSource } from '#shared/wikipedia';
 
@@ -32,6 +34,10 @@ async function publishedSnapshot(): Promise<Snapshot | undefined> {
     if (candidate.notes) candidate.notes = parseNotes(candidate.notes, codes);
     if (candidate.officialSites) candidate.officialSites = parseOfficialSites(candidate.officialSites, codes);
     if (candidate.visaPages) candidate.visaPages = parseVisaPages(candidate.visaPages, codes);
+    if (candidate.policyChecks) candidate.policyChecks = parsePolicyChecks(candidate.policyChecks, codes);
+    if (candidate.destinationFacts)
+      candidate.destinationFacts = parseDestinationFacts(candidate.destinationFacts, codes);
+    if (candidate.history) candidate.history = parseHistory(candidate.history, codes);
     published = { modified, snapshot: candidate };
   }
   return published.snapshot;

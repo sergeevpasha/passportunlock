@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { iconPaths } from '~/utils/icons';
 import { followLink } from '~/utils/links';
 const props = defineProps<{
   rows: {
@@ -60,19 +59,7 @@ onNuxtReady(() => {
           :href="row.href"
           :aria-label="row.linkLabel"
           class="inline-flex h-8 w-8 items-center justify-center rounded-full text-stone-400 group-hover:bg-emerald-100 group-hover:text-emerald-800"
-          ><svg
-            width="17"
-            height="17"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-            class="shrink-0"
-          >
-            <path :d="iconPaths.diagonal" /></svg
+          ><svg width="17" height="17" aria-hidden="true" class="shrink-0"><use href="#icon-diagonal" /></svg
         ></a>
       </td>
     </tr>

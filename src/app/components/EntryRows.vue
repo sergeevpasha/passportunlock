@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { entryLabels, type EntryRule } from '#shared/passports';
 import { entryClasses } from '~/utils/entry';
-import { iconPaths } from '~/utils/icons';
 import { followLink } from '~/utils/links';
 const props = defineProps<{
   /** A passport's or a destination's rule for each country, linking to the page for that pair. */
@@ -17,7 +16,8 @@ const props = defineProps<{
   }[];
 }>();
 
-// Like the ranking rows, these are plain links and images rather than components, so they are cheap to hydrate.
+// Like the ranking rows, these are plain links and images rather than components, so they are cheap to hydrate. Their
+// icons point at the copies the layout defines once.
 onNuxtReady(() => {
   if (props.rows[0]) preloadRouteComponents(props.rows[0].href);
 });
@@ -46,20 +46,8 @@ onNuxtReady(() => {
           <span
             class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-medium whitespace-nowrap"
             :class="entryClasses[row.rule.status]"
-            ><svg
-              v-if="row.rule.status === 'visa free'"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-              class="shrink-0"
-            >
-              <path :d="iconPaths.check" /></svg
+            ><svg v-if="row.rule.status === 'visa free'" width="12" height="12" aria-hidden="true" class="shrink-0">
+              <use href="#icon-check" /></svg
             >{{ entryLabels[row.rule.status] }}</span
           ><span v-if="row.rule.days" class="text-[10px] whitespace-nowrap text-stone-500"
             >{{ row.rule.days }} days</span
@@ -71,19 +59,7 @@ onNuxtReady(() => {
           :href="row.href"
           :aria-label="row.linkLabel"
           class="inline-flex h-8 w-8 items-center justify-center rounded-full text-stone-400 group-hover:bg-emerald-100 group-hover:text-emerald-800"
-          ><svg
-            width="17"
-            height="17"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-            class="shrink-0"
-          >
-            <path :d="iconPaths.diagonal" /></svg
+          ><svg width="17" height="17" aria-hidden="true" class="shrink-0"><use href="#icon-diagonal" /></svg
         ></a>
       </td>
     </tr>

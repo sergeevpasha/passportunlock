@@ -41,6 +41,8 @@ describe('passport sync workflow', () => {
     baselineDirectory: string;
     acceptLargeChange: boolean;
     visaPages: Record<string, string>;
+    policyReviews: Record<string, never>;
+    dataModule: string;
   };
   const request = vi.fn<typeof fetch>();
   const pause = vi.fn<(seconds: number) => Promise<void>>();
@@ -53,6 +55,8 @@ describe('passport sync workflow', () => {
       baselineDirectory: join(root, 'bundled'),
       acceptLargeChange: true,
       visaPages: {},
+      policyReviews: {},
+      dataModule: join(root, 'passport-data.ts'),
     };
     await storage.mkdir(options.baselineDirectory);
     request.mockReset().mockImplementation(async input => articleResponse(input));

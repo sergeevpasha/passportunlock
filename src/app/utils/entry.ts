@@ -55,41 +55,98 @@ export const typicalRequirements: Partial<Record<EntryType, string[]>> = {
   ],
 };
 
-/** A plain answer to "do I need a visa?". `destination` is the name as it reads inside a sentence. */
-export function entryAnswer(rule: EntryRule, passport: string, destination: string) {
-  const holders = `${passport} passport holders`;
+const capitalized = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+/** A name as an owner: "Malaysia’s", "the United States’". */
+export function possessive(name: string) {
+  return /s$/i.test(name) ? `${name}’` : `${name}’s`;
+}
+
+/** A plain answer to "do I need a visa?" that opens with yes or no. `holders` names the passport's holders, as in
+ * "German citizens"; `destination` is the name as it reads inside a sentence; `scheme` names an eTA. */
+export function entryAnswer(rule: EntryRule, holders: string, destination: string, scheme = 'eTA') {
   const stay = rule.days ? ` for up to ${rule.days} days` : '';
   switch (rule.status) {
     case 'visa free':
-      return { title: 'No visa needed', text: `${holders} can visit ${destination} without a visa${stay}.` };
+      return { title: 'No visa needed', text: `No. ${holders} can visit ${destination} without a visa${stay}.` };
     case 'visa on arrival':
       return {
         title: 'Visa on arrival',
-        text: `${holders} can get a visa on arrival in ${destination}${rule.days ? `, for stays of up to ${rule.days} days` : ''}.`,
+        text: `Yes, but ${holders} can get it on arrival in ${destination}${rule.days ? `, for stays of up to ${rule.days} days` : ''}.`,
       };
     case 'eta':
       return {
-        title: 'No visa, but an eTA',
-        text: `${holders} can visit ${destination} without a visa${stay}, but must get an electronic travel authorisation (eTA) online before they travel.`,
+        title: `No visa, but ${scheme} needed`,
+        text: `No visa, but ${holders} need an approved ${scheme} before they travel: an electronic travel authorisation, applied for online. They can then visit ${destination}${stay}.`,
       };
     case 'e-visa':
       return {
         title: 'eVisa needed',
-        text: `${holders} need a visa for ${destination}, which they apply for online before they travel${rule.days ? `. It allows stays of up to ${rule.days} days` : ''}.`,
+        text: `Yes. ${holders} need a visa for ${destination}, which they apply for online before they travel${rule.days ? `. It allows stays of up to ${rule.days} days` : ''}.`,
       };
     case 'visa required':
       return {
         title: 'Visa needed',
-        text: `${holders} need a visa for ${destination}, arranged before they travel, usually through an embassy or consulate.`,
+        text: `Yes. ${holders} need a visa for ${destination}, arranged before they travel, usually through an embassy or consulate.`,
       };
     case 'no admission':
-      return { title: 'Entry restricted', text: `${destination} refuses or restricts entry for ${holders}.` };
+      return {
+        title: 'Entry restricted',
+        text: `${capitalized(destination)} refuses or restricts entry for ${holders}.`,
+      };
     default:
       return {
         title: 'Not confirmed',
         text: `There is no confirmed rule for ${holders} visiting ${destination}. Check with the destination before you plan a trip.`,
       };
   }
+}
+
+/** A page title in the words people search with, answer included: "Malaysia visa for German citizens: not required
+ * (90 days)". `destination` is the plain name. */
+export function entryHeadline(rule: EntryRule, nationality: string, destination: string, scheme = 'eTA') {
+  const visa = `${destination} visa for ${nationality} citizens`;
+  const days = rule.days ? ` (${rule.days} days)` : '';
+  switch (rule.status) {
+    case 'visa free':
+      return `${visa}: not required${days}`;
+    case 'visa on arrival':
+      return `${visa}: visa on arrival${days}`;
+    case 'eta':
+      return `${visa}: not required, ${scheme} needed`;
+    case 'e-visa':
+      return `${visa}: eVisa required`;
+    case 'visa required':
+      return `${visa}: visa required`;
+    case 'no admission':
+      return `${destination} entry for ${nationality} citizens: restricted`;
+    default:
+      return `Do ${nationality} citizens need a visa for ${destination}?`;
+  }
+}
+
+const grantPhrases: Partial<Record<EntryType, string>> = {
+  'visa free': 'no visa needed',
+  'visa on arrival': 'a visa on arrival',
+  eta: 'an eTA instead',
+  'e-visa': 'an eVisa instead',
+};
+
+/** What a visa or residence permit from other countries changes: "With a valid visa or residence permit from the
+ * United States or Canada: no visa needed, for up to 90 days." */
+export function exceptionLine(exception: { grants: EntryType; issuers: string[]; holds: string; days?: number }) {
+  const issuers = new Intl.ListFormat('en', { type: 'disjunction' }).format(exception.issuers);
+  const stay = exception.days ? `, for up to ${exception.days} days` : '';
+  return `With a valid ${exception.holds} from ${issuers}: ${grantPhrases[exception.grants] ?? exception.grants}${stay}.`;
+}
+
+/** Passport validity in words: "valid for at least 6 months after arrival". */
+export function validityLabel(validity: { months: number; after?: 'arrival' | 'departure' | 'stay' }) {
+  const months = `${validity.months} ${validity.months === 1 ? 'month' : 'months'}`;
+  const after = validity.after
+    ? { arrival: ' after arrival', departure: ' after departure', stay: ' beyond the stay' }[validity.after]
+    : '';
+  return `Valid for at least ${months}${after}`;
 }
 
 export function dateLabel(value: string, month: 'short' | 'long' = 'short') {
