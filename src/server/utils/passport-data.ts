@@ -1,6 +1,6 @@
 import { readFile, stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import wikipedia from '../data/2026-10-19.json';
+import wikipedia from '../data/2026-10-26.json';
 import { parseHistory } from '#shared/history';
 import { parseMatrix, type Snapshot } from '#shared/passports';
 import { parseDestinationFacts, parsePolicyChecks } from '#shared/policy-checks';
