@@ -1,6 +1,10 @@
 import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 
+/** The world map's modules: app/utils/world-map.ts, the components that draw it, and the libraries and atlas it uses */
+const WORLD_MAP_CODE =
+  /[\\/](@d3-maps|d3-[a-z]+|topojson-client|iso-3166)[\\/]|world-map\.ts|WorldArtwork\.vue|PassportMap\.vue/;
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
@@ -17,6 +21,11 @@ export default defineNuxtConfig({
     // Compose mounts the application here; override for another production storage location.
     passportDataDirectory: '/var/www/.data/passports',
   },
+  routeRules: {
+    // Browsers keep the logo and passport covers instead of asking again on every page.
+    '/brand/**': { headers: { 'cache-control': 'public, max-age=2592000' } },
+    '/covers/**': { headers: { 'cache-control': 'public, max-age=2592000' } },
+  },
   nitro: {
     // flag-icons SVGs are served as static files (/flags/1x1/nz.svg, /flags/4x3/nz.svg) instead of being bundled.
     publicAssets: [
@@ -29,6 +38,27 @@ export default defineNuxtConfig({
   },
   vite: {
     plugins: [tailwindcss()],
+    $client: {
+      build: {
+        rolldownOptions: {
+          output: {
+            // The libraries and the code the pages share go in two files instead of dozens of small ones, each its own
+            // request. The world map's code and atlas stay with the pages that draw a map.
+            codeSplitting: {
+              groups: [
+                { name: 'vendor', test: id => /[\\/]node_modules[\\/]/.test(id) && !WORLD_MAP_CODE.test(id) },
+                {
+                  name: 'shared',
+                  test: id =>
+                    /[\\/]app[\\/](components|composables|utils)[\\/]|[\\/]shared[\\/]/.test(id) &&
+                    !WORLD_MAP_CODE.test(id),
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
   },
   compatibilityDate: '2025-04-10',
   app: {
