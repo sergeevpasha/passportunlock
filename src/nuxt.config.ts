@@ -22,6 +22,13 @@ export default defineNuxtConfig({
     passportDataDirectory: '/var/www/.data/passports',
   },
   routeRules: {
+    // Pages, API answers, the sitemaps and robots.txt change only with a deployment, which brings the data snapshot.
+    // Vercel's CDN keeps each response until the next deployment (its cache key includes the deployment), so the
+    // function renders an address once per deployment and region instead of on every request. Browsers still ask the
+    // CDN each time. A response that depends on anything else, such as the time or a cookie, must opt out.
+    '/**': { headers: { 'vercel-cdn-cache-control': 'public, max-age=31536000' } },
+    // The comparison answers with each snapshot's age in days, so it stays out of the cache, as its no-store asks.
+    '/api/compare': { headers: { 'vercel-cdn-cache-control': 'no-store' } },
     // Browsers keep the logo and passport covers instead of asking again on every page.
     '/brand/**': { headers: { 'cache-control': 'public, max-age=2592000' } },
     '/covers/**': { headers: { 'cache-control': 'public, max-age=2592000' } },
